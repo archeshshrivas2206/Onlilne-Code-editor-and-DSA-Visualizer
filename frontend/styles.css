@@ -1,0 +1,90 @@
+body{
+margin:0;
+font-family:Arial;
+background:#f4f6f9;
+}
+
+/* Layout */
+
+.app{
+display:flex;
+height:100vh;
+}
+
+/* Sidebar */
+
+.sidebar{
+width:220px;
+background:#1e1e2f;
+color:white;
+padding:20px;
+}
+
+.sidebar h2{
+margin-top:0;
+}
+
+.sidebar button{
+width:100%;
+padding:10px;
+margin-bottom:10px;
+border:none;
+background:#2f2f45;
+color:white;
+cursor:pointer;
+}
+
+.sidebar button:hover{
+background:#44446b;
+}
+
+/* Center Editor */
+
+.editor{
+flex:1;
+padding:20px;
+overflow:auto;
+}
+
+textarea{
+width:100%;
+height:260px;
+margin-top:10px;
+margin-bottom:10px;
+font-family:monospace;
+font-size:14px;
+padding:10px;
+resize:vertical;
+}
+
+/* Visualization Panel */
+
+.visualization{
+flex:1;
+background:white;
+border-left:2px solid #ddd;
+padding:20px;
+}
+
+#bars{
+display:flex;
+align-items:flex-end;
+justify-content:center;
+height:500px;
+border:1px solid #ccc;
+position:relative;
+}
+
+/* Sorting bars */
+
+.bar{
+width:40px;
+background:linear-gradient(to top,#4e73df,#224abe);
+border-radius:4px;
+display:flex;
+align-items:flex-end;
+justify-content:center;
+color:white;
+font-size:12px;
+font-weight:bold;
+}
