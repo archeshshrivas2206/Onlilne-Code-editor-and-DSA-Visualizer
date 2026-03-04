@@ -68,6 +68,7 @@
         <option value="queue">Queue</option>
         <option value="linkedlist">Linked List</option>
         <option value="tree">Binary Tree</option>
+        <option value="graph">Graph</option>
     </select>
 
     <!-- ================= SORTING SECTION ================= -->
@@ -136,6 +137,27 @@ def bubble_sort(arr):
         </p>
 
     </div>
+    <!-- ================= GRAPH SECTION ================= -->
+
+    <div id="graphControls" style="display:none; margin-top:15px;">
+
+        <input id="nodeValue" placeholder="Node label">
+        <button onclick="addNode()">Add Node</button>
+
+        <br><br>
+
+        <input id="edgeFrom" placeholder="From">
+        <input id="edgeTo" placeholder="To">
+        <button onclick="addEdge()">Add Edge</button>
+
+        <br><br>
+
+        <button onclick="runGraphTraversal('bfs')">BFS</button>
+        <button onclick="runGraphTraversal('dfs')">DFS</button>
+
+        <p>Traversal Output: <span id="graphTraversalOutput"></span></p>
+
+    </div>
     <!-- Visualization -->
     <div id="bars"></div>
 
@@ -144,6 +166,8 @@ def bubble_sort(arr):
         let queue = [];
         let linkedList = [];
         let tree = null;
+        let graph = {};
+        let graphNodes = [];
 
         // ================= MODE SWITCH =================
         function changeMode() {
@@ -155,6 +179,7 @@ def bubble_sort(arr):
             const queueSection = document.getElementById("queueControls");
             const linkedListSection = document.getElementById("linkedListControls");
             const treeSection = document.getElementById("treeControls");
+            const graphSection = document.getElementById("graphControls");
 
             const bars = document.getElementById("bars");
             document.getElementById("treeTraversalControls").style.display = "block";
@@ -206,6 +231,13 @@ def bubble_sort(arr):
                 treeSection.style.display = "block";
 
                 bars.style.flexDirection = "column";
+                bars.style.alignItems = "center";
+
+            } else if (mode === "graph") {
+
+                graphSection.style.display = "block";
+
+                bars.style.flexDirection = "row";
                 bars.style.alignItems = "center";
 
             }
@@ -532,6 +564,7 @@ def bubble_sort(arr):
             result.push(node.value);
             inorder(node.right, result);
         }
+
         function preorder(node, result) {
             if (!node) return;
 
@@ -539,6 +572,7 @@ def bubble_sort(arr):
             preorder(node.left, result);
             preorder(node.right, result);
         }
+
         function postorder(node, result) {
             if (!node) return;
 
@@ -546,6 +580,7 @@ def bubble_sort(arr):
             postorder(node.right, result);
             result.push(node.value);
         }
+
         function levelorder(root, result) {
 
             const queue = [];
@@ -561,6 +596,7 @@ def bubble_sort(arr):
                 if (node.right) queue.push(node.right);
             }
         }
+
         function runTraversal(type) {
 
             const result = [];
@@ -572,6 +608,7 @@ def bubble_sort(arr):
 
             animateTraversal(result);
         }
+
         function animateTraversal(order) {
 
             const nodes = document.querySelectorAll("#bars div[data-value]");
@@ -608,6 +645,187 @@ def bubble_sort(arr):
             }
 
             highlight();
+        }
+        function addNode() {
+
+            const value = document.getElementById("nodeValue").value;
+
+            if (!value) return;
+
+            graph[value] = [];
+            graphNodes.push(value);
+
+            document.getElementById("nodeValue").value = "";
+
+            renderGraph();
+
+        }
+        function addNode() {
+
+            const value = document.getElementById("nodeValue").value;
+
+            if (!value) return;
+
+            graph[value] = [];
+            graphNodes.push(value);
+
+            document.getElementById("nodeValue").value = "";
+
+            renderGraph();
+
+        }
+        function addEdge() {
+
+            const from = document.getElementById("edgeFrom").value;
+            const to = document.getElementById("edgeTo").value;
+
+            if (!graph[from] || !graph[to]) return;
+
+            graph[from].push(to);
+
+            document.getElementById("edgeFrom").value = "";
+            document.getElementById("edgeTo").value = "";
+
+            renderGraph();
+
+        }
+        function renderGraph() {
+
+            const container = document.getElementById("bars");
+            container.innerHTML = "";
+
+            const radius = 150;
+            const centerX = 400;
+            const centerY = 200;
+
+            const positions = {};
+
+            graphNodes.forEach((node, i) => {
+
+                const angle = (2 * Math.PI * i) / graphNodes.length;
+
+                const x = centerX + radius * Math.cos(angle);
+                const y = centerY + radius * Math.sin(angle);
+
+                positions[node] = { x, y };
+
+                const nodeDiv = document.createElement("div");
+
+                nodeDiv.style.position = "absolute";
+                nodeDiv.style.left = x + "px";
+                nodeDiv.style.top = y + "px";
+                nodeDiv.style.width = "50px";
+                nodeDiv.style.height = "50px";
+                nodeDiv.style.borderRadius = "50%";
+                nodeDiv.style.background = "#3498db";
+                nodeDiv.style.color = "white";
+                nodeDiv.style.display = "flex";
+                nodeDiv.style.alignItems = "center";
+                nodeDiv.style.justifyContent = "center";
+
+                nodeDiv.dataset.value = node;
+
+                nodeDiv.innerText = node;
+
+                container.appendChild(nodeDiv);
+
+            });
+
+        }
+        function bfs(start) {
+
+            const visited = new Set();
+            const queue = [start];
+            const order = [];
+
+            while (queue.length) {
+
+                const node = queue.shift();
+
+                if (!visited.has(node)) {
+
+                    visited.add(node);
+                    order.push(node);
+
+                    graph[node].forEach(n => queue.push(n));
+
+                }
+
+            }
+
+            return order;
+
+        }
+        function dfs(node, visited, order) {
+
+            visited.add(node);
+            order.push(node);
+
+            graph[node].forEach(n => {
+                if (!visited.has(n)) dfs(n, visited, order);
+            });
+
+        }
+        function runGraphTraversal(type) {
+
+            const start = graphNodes[0];
+
+            let order = [];
+
+            if (type === "bfs") order = bfs(start);
+
+            else {
+
+                const visited = new Set();
+                dfs(start, visited, order);
+
+            }
+
+            animateGraphTraversal(order);
+
+        }
+        function animateGraphTraversal(order) {
+
+            const nodes = document.querySelectorAll("#bars div[data-value]");
+
+            const output = document.getElementById("graphTraversalOutput");
+
+            output.innerText = "";
+
+            let i = 0;
+
+            function step() {
+
+                if (i >= order.length) return;
+
+                const value = order[i];
+
+                nodes.forEach(n => {
+
+                    if (n.dataset.value === value) {
+
+                        n.style.background = "#e74c3c";
+
+                        setTimeout(() => {
+
+                            n.style.background = "#3498db";
+
+                        }, 600);
+
+                    }
+
+                });
+
+                output.innerText += value + " ";
+
+                i++;
+
+                setTimeout(step, 700);
+
+            }
+
+            step();
+
         }
     </script>
 
