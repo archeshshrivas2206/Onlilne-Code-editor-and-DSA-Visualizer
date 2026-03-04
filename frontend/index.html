@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>DSA Visualizer V1</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background-color: #f4f6f9;
+        }
+
+        h2 {
+            margin-bottom: 10px;
+        }
+
+        select,
+        input,
+        button {
+            padding: 6px;
+            margin-right: 10px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-top: 10px;
+            margin-bottom: 10px;
+        }
+
+        #bars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            height: 320px;
+            margin-top: 30px;
+            gap: 8px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            background: white;
+            position: relative
+        }
+
+        .bar {
+            width: 40px;
+            background: linear-gradient(to top, #4e73df, #224abe);
+            border-radius: 4px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            transition: height 0.3s ease;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>DSA Visualizer</h2>
+
+    <!-- Mode Selector -->
+    <select id="mode" onchange="changeMode()">
+        <option value="sorting">Sorting</option>
+        <option value="stack">Stack</option>
+        <option value="queue">Queue</option>
+        <option value="linkedlist">Linked List</option>
+        <option value="tree">Binary Tree</option>
+    </select>
+
+    <!-- ================= SORTING SECTION ================= -->
+    <div id="sortingSection">
+
+        <div style="margin-top:10px;">
+            <select id="algorithm">
+                <option value="bubble_sort">Bubble Sort</option>
+                <option value="insertion_sort">Insertion Sort</option>
+                <option value="selection_sort">Selection Sort</option>
+                <option value="merge_sort">Merge Sort</option>
+                <option value="quick_sort">Quick Sort</option>
+                <option value="heap_sort">Heap Sort</option>
+            </select>
+
+            <label>Speed:</label>
+            <input type="range" id="speed" min="50" max="1000" value="500">
+        </div>
+
+        <textarea id="code">
+def bubble_sort(arr):
+    for i in range(len(arr)):
+        for j in range(len(arr)-1):
+            if arr[j] > arr[j+1]:
+                arr[j], arr[j+1] = arr[j+1], arr[j]
+        </textarea>
+
+        <input id="arrayInput" value="5,3,8,1" />
+        <button onclick="runCode()">Run</button>
+
+    </div>
+
+    <!-- ================= STACK SECTION ================= -->
+    <div id="stackControls" style="display:none; margin-top:15px;">
+        <input id="stackValue" placeholder="Value to push">
+        <button onclick="pushStack()">Push</button>
+        <button onclick="popStack()">Pop</button>
+    </div>
+    <!-- ================= QUEUE SECTION ================= -->
+
+    <div id="queueControls" style="display:none; margin-top:15px;">
+        <input id="queueValue" placeholder="Value to enqueue">
+        <button onclick="enqueue()">Enqueue</button>
+        <button onclick="dequeue()">Dequeue</button>
+    </div>
+    <!-- ================= LINKED LIST SECTION ================= -->
+    <div id="linkedListControls" style="display:none; margin-top:15px;">
+        <input id="llValue" placeholder="Value">
+        <button onclick="insertNode()">Insert At End</button>
+        <button onclick="deleteNode()">Delete By Value</button>
+    </div>
+    <!-- ================= BST SECTION ================= -->
+    <div id="treeControls" style="display:none; margin-top:15px;">
+        <input id="treeValue" placeholder="Value to insert">
+        <button onclick="insertTree()">Insert Node</button>
+    </div>
+    <div id="treeTraversalControls" style="display:none; margin-top:10px;">
+
+        <button onclick="runTraversal('inorder')">Inorder</button>
+        <button onclick="runTraversal('preorder')">Preorder</button>
+        <button onclick="runTraversal('postorder')">Postorder</button>
+        <button onclick="runTraversal('levelorder')">Level Order</button>
+
+        <p style="margin-top:10px;">
+            Traversal Output: <span id="traversalOutput"></span>
+        </p>
+
+    </div>
+    <!-- Visualization -->
+    <div id="bars"></div>
+
+    <script>
+        let stack = [];
+        let queue = [];
+        let linkedList = [];
+        let tree = null;
+
+        // ================= MODE SWITCH =================
+        function changeMode() {
+
+            const mode = document.getElementById("mode").value;
+
+            const sortingSection = document.getElementById("sortingSection");
+            const stackSection = document.getElementById("stackControls");
+            const queueSection = document.getElementById("queueControls");
+            const linkedListSection = document.getElementById("linkedListControls");
+            const treeSection = document.getElementById("treeControls");
+
+            const bars = document.getElementById("bars");
+            document.getElementById("treeTraversalControls").style.display = "block";
+
+            bars.innerHTML = "";
+
+            if (mode === "stack") {
+
+                sortingSection.style.display = "none";
+                stackSection.style.display = "block";
+                queueSection.style.display = "none";
+                linkedListSection.style.display = "none";
+                treeSection.style.display = "none";
+
+                bars.style.flexDirection = "column-reverse";
+                bars.style.alignItems = "center";
+
+            }
+            else if (mode === "queue") {
+
+                sortingSection.style.display = "none";
+                stackSection.style.display = "none";
+                queueSection.style.display = "block";
+                linkedListSection.style.display = "none";
+                treeSection.style.display = "none";
+
+                bars.style.flexDirection = "row";
+                bars.style.alignItems = "center";
+
+            }
+            else if (mode === "linkedlist") {
+
+                sortingSection.style.display = "none";
+                stackSection.style.display = "none";
+                queueSection.style.display = "none";
+                linkedListSection.style.display = "block";
+                treeSection.style.display = "none";
+
+                bars.style.flexDirection = "row";
+                bars.style.alignItems = "center";
+
+            }
+            else if (mode === "tree") {
+
+                sortingSection.style.display = "none";
+                stackSection.style.display = "none";
+                queueSection.style.display = "none";
+                linkedListSection.style.display = "none";
+                treeSection.style.display = "block";
+
+                bars.style.flexDirection = "column";
+                bars.style.alignItems = "center";
+
+            }
+            else {
+
+                sortingSection.style.display = "block";
+                stackSection.style.display = "none";
+                queueSection.style.display = "none";
+                linkedListSection.style.display = "none";
+                treeSection.style.display = "none";
+
+                bars.style.flexDirection = "row";
+                bars.style.alignItems = "flex-end";
+
+            }
+        }
+        // ================= SORTING =================
+        async function runCode() {
+            const code = document.getElementById("code").value;
+
+            const arrayInput = document.getElementById("arrayInput").value
+                .split(",")
+                .map(Number);
+
+            const algorithm = document.getElementById("algorithm").value;
+
+            const response = await fetch("http://127.0.0.1:8000/run", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    code: code,
+                    input_array: arrayInput,
+                    algorithm: algorithm
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+
+            animate(data.steps);
+        }
+
+        function animate(steps) {
+            let i = 0;
+
+            function nextStep() {
+                if (i >= steps.length) return;
+
+                renderBars(steps[i]);
+                i++;
+
+                const speed = document.getElementById("speed").value;
+                setTimeout(nextStep, speed);
+            }
+
+            nextStep();
+        }
+
+        function renderBars(step) {
+            const container = document.getElementById("bars");
+            container.innerHTML = "";
+
+            const array = step.array;
+            const max = Math.max(...array);
+
+            array.forEach((value, index) => {
+                const bar = document.createElement("div");
+                bar.classList.add("bar");
+
+                const normalizedHeight = (value / max) * 300;
+                bar.style.height = normalizedHeight + "px";
+                bar.innerText = value;
+
+                if (step.swap === index) {
+                    bar.style.background = "linear-gradient(to top, #ff4d4d, #cc0000)";
+                }
+
+                container.appendChild(bar);
+            });
+        }
+
+        // ================= STACK =================
+        function pushStack() {
+            const value = document.getElementById("stackValue").value;
+            if (value === "") return;
+
+            stack.push(Number(value));
+            document.getElementById("stackValue").value = "";
+            renderStack();
+        }
+
+        function popStack() {
+            if (stack.length === 0) return;
+
+            stack.pop();
+            renderStack();
+        }
+
+        function renderStack() {
+            const container = document.getElementById("bars");
+            container.innerHTML = "";
+
+            stack.forEach((value) => {
+                const box = document.createElement("div");
+                box.style.width = "100px";
+                box.style.height = "40px";
+                box.style.background = "#28a745";
+                box.style.margin = "5px";
+                box.style.display = "flex";
+                box.style.alignItems = "center";
+                box.style.justifyContent = "center";
+                box.style.color = "white";
+                box.style.borderRadius = "5px";
+                box.innerText = value;
+
+                container.appendChild(box);
+            });
+        }
+
+        function enqueue() {
+            const value = document.getElementById("queueValue").value;
+            if (value === "") return;
+
+            queue.push(Number(value));
+            document.getElementById("queueValue").value = "";
+            renderQueue();
+        }
+
+        function dequeue() {
+            if (queue.length === 0) return;
+
+            queue.shift(); // removes first element
+            renderQueue();
+        }
+
+        function renderQueue() {
+            const container = document.getElementById("bars");
+            container.innerHTML = "";
+
+            queue.forEach((value, index) => {
+                const box = document.createElement("div");
+                box.style.width = "60px";
+                box.style.height = "60px";
+                box.style.background = "#17a2b8";
+                box.style.margin = "5px";
+                box.style.display = "flex";
+                box.style.alignItems = "center";
+                box.style.justifyContent = "center";
+                box.style.color = "white";
+                box.style.borderRadius = "5px";
+                box.style.fontWeight = "bold";
+                box.innerText = value;
+
+                container.appendChild(box);
+            });
+        }
+
+        function insertNode() {
+            const value = document.getElementById("llValue").value;
+            if (value === "") return;
+
+            linkedList.push(Number(value));
+            document.getElementById("llValue").value = "";
+            renderLinkedList();
+        }
+
+        function deleteNode() {
+            const value = Number(document.getElementById("llValue").value);
+            linkedList = linkedList.filter(v => v !== value);
+            document.getElementById("llValue").value = "";
+            renderLinkedList();
+        }
+
+        function renderLinkedList() {
+            const container = document.getElementById("bars");
+            container.innerHTML = "";
+
+            linkedList.forEach((value, index) => {
+                const node = document.createElement("div");
+                node.style.display = "flex";
+                node.style.alignItems = "center";
+
+                const box = document.createElement("div");
+                box.style.width = "70px";
+                box.style.height = "50px";
+                box.style.background = "#6f42c1";
+                box.style.color = "white";
+                box.style.display = "flex";
+                box.style.alignItems = "center";
+                box.style.justifyContent = "center";
+                box.style.borderRadius = "5px";
+                box.style.fontWeight = "bold";
+                box.innerText = value;
+
+                node.appendChild(box);
+
+                if (index !== linkedList.length - 1) {
+                    const arrow = document.createElement("span");
+                    arrow.style.margin = "0 10px";
+                    arrow.innerText = "→";
+                    node.appendChild(arrow);
+                }
+
+                container.appendChild(node);
+            });
+        }
+
+        function insertTree() {
+            const value = Number(document.getElementById("treeValue").value);
+            if (!value) return;
+
+            tree = insertBST(tree, value);
+
+            document.getElementById("treeValue").value = "";
+            renderTree();
+        }
+
+        function insertBST(node, value) {
+
+            if (node === null) {
+                return {
+                    value: value,
+                    left: null,
+                    right: null
+                };
+            }
+
+            if (value < node.value) {
+                node.left = insertBST(node.left, value);
+            } else {
+                node.right = insertBST(node.right, value);
+            }
+
+            return node;
+        }
+
+        function renderTree() {
+
+            const container = document.getElementById("bars");
+            container.innerHTML = "";
+
+            if (!tree) return;
+
+            const width = container.clientWidth;
+            container.style.position = "relative";
+            const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+            svg.style.position = "absolute";
+            svg.style.top = "0";
+            svg.style.left = "0";
+            svg.style.width = "100%";
+            svg.style.height = "100%";
+
+            container.appendChild(svg);
+
+            function drawNode(node, x, y, offset) {
+
+                if (!node) return;
+
+                const nodeDiv = document.createElement("div");
+                nodeDiv.style.position = "absolute";
+                nodeDiv.style.left = x + "px";
+                nodeDiv.style.top = y + "px";
+                nodeDiv.style.width = "50px";
+                nodeDiv.style.height = "50px";
+                nodeDiv.style.borderRadius = "50%";
+                nodeDiv.style.background = "#f39c12";
+                nodeDiv.style.display = "flex";
+                nodeDiv.style.alignItems = "center";
+                nodeDiv.style.justifyContent = "center";
+                nodeDiv.style.color = "white";
+                nodeDiv.style.fontWeight = "bold";
+
+                nodeDiv.innerText = node.value;
+
+                nodeDiv.dataset.value = node.value;
+
+                container.appendChild(nodeDiv);
+
+                if (node.left) {
+
+                    const childX = x - offset;
+                    const childY = y + 80;
+
+                    drawLine(x + 25, y + 25, childX + 25, childY + 25);
+
+                    drawNode(node.left, childX, childY, offset / 2);
+                }
+
+                if (node.right) {
+
+                    const childX = x + offset;
+                    const childY = y + 80;
+
+                    drawLine(x + 25, y + 25, childX + 25, childY + 25);
+
+                    drawNode(node.right, childX, childY, offset / 2);
+                }
+            }
+            function drawLine(x1, y1, x2, y2) {
+
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+
+                line.setAttribute("x1", x1);
+                line.setAttribute("y1", y1);
+                line.setAttribute("x2", x2);
+                line.setAttribute("y2", y2);
+
+                line.setAttribute("stroke", "#555");
+                line.setAttribute("stroke-width", "2");
+
+                svg.appendChild(line);
+            }
+            drawNode(tree, width / 2, 20, width / 4);
+        }
+
+        function inorder(node, result) {
+            if (!node) return;
+
+            inorder(node.left, result);
+            result.push(node.value);
+            inorder(node.right, result);
+        }
+        function preorder(node, result) {
+            if (!node) return;
+
+            result.push(node.value);
+            preorder(node.left, result);
+            preorder(node.right, result);
+        }
+        function postorder(node, result) {
+            if (!node) return;
+
+            postorder(node.left, result);
+            postorder(node.right, result);
+            result.push(node.value);
+        }
+        function levelorder(root, result) {
+
+            const queue = [];
+
+            if (root) queue.push(root);
+
+            while (queue.length > 0) {
+
+                const node = queue.shift();
+                result.push(node.value);
+
+                if (node.left) queue.push(node.left);
+                if (node.right) queue.push(node.right);
+            }
+        }
+        function runTraversal(type) {
+
+            const result = [];
+
+            if (type === "inorder") inorder(tree, result);
+            else if (type === "preorder") preorder(tree, result);
+            else if (type === "postorder") postorder(tree, result);
+            else if (type === "levelorder") levelorder(tree, result);
+
+            animateTraversal(result);
+        }
+        function animateTraversal(order) {
+
+            const nodes = document.querySelectorAll("#bars div[data-value]");
+            const output = document.getElementById("traversalOutput");
+
+            output.innerText = "";
+
+            let i = 0;
+
+            function highlight() {
+
+                if (i >= order.length) return;
+
+                const value = order[i];
+
+                nodes.forEach(node => {
+
+                    if (Number(node.dataset.value) === value) {
+
+                        node.style.background = "#e74c3c";
+
+                        setTimeout(() => {
+                            node.style.background = "#f39c12";
+                        }, 700);
+                    }
+
+                });
+
+                output.innerText += value + " ";
+
+                i++;
+
+                setTimeout(highlight, 800);
+            }
+
+            highlight();
+        }
+    </script>
+
+</body>
+
+</html>

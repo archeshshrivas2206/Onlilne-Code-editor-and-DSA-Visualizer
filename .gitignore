@@ -1,0 +1,17 @@
+# Virtual environments
+dsavisualizer/
+venv/
+__pycache__/
+
+# Python
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Node (future)
+node_modules/
