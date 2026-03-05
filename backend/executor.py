@@ -4,7 +4,9 @@ def execute_user_code(user_code: str, input_array: list, algorithm: str):
     local_vars = {}
 
     try:
+        
         exec(user_code, {}, local_vars)
+
 
         if algorithm not in local_vars:
             return {"error": f"Function {algorithm} not found"}
