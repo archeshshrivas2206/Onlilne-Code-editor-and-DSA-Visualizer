@@ -13,9 +13,14 @@ window.onload = function () {
         editor = monaco.editor.create(document.getElementById("editor"), {
 
             value: `def bubble_sort(arr):
-    for i in range(len(arr)):
-        for j in range(len(arr)-1):
-            if arr[j] > arr[j+1]:
+
+    n = len(arr)
+
+    for i in range(n):
+        for j in range(n-1):
+
+            if arr.compare(j, j+1):
+
                 arr[j], arr[j+1] = arr[j+1], arr[j]`,
 
             language: "python",
@@ -96,8 +101,10 @@ function changeMode(mode) {
 
         linkedListSection.style.display = "block";
 
+        bars.style.display = "flex";
         bars.style.flexDirection = "row";
         bars.style.alignItems = "center";
+        bars.style.justifyContent = "center";
 
     }
 

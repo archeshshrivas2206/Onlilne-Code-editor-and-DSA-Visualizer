@@ -68,11 +68,12 @@ padding:20px;
 
 #bars{
 display:flex;
-align-items:flex-end;
+align-items:center;
 justify-content:center;
 height:500px;
 border:1px solid #ccc;
 position:relative;
+gap:15px
 }
 
 /* Sorting bars */
