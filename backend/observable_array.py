@@ -6,7 +6,8 @@ class ObservableArray:
         self.steps = [{
             "array": arr.copy(),
             "swap": None,
-            "compare": None
+            "compare": None,
+            "line": None
         }]
 
     def __getitem__(self, index):
@@ -19,7 +20,8 @@ class ObservableArray:
         self.steps.append({
             "array": self.arr.copy(),
             "swap": index,
-            "compare": None
+            "compare": None,
+            "line": None
         })
 
     def compare(self, i, j):
@@ -27,7 +29,8 @@ class ObservableArray:
         self.steps.append({
             "array": self.arr.copy(),
             "swap": None,
-            "compare": [i, j]
+            "compare": [i, j],
+            "line": None
         })
 
         return self.arr[i] > self.arr[j]

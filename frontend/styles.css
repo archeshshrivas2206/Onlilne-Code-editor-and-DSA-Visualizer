@@ -89,3 +89,6 @@ color:white;
 font-size:12px;
 font-weight:bold;
 }
+.executingLine{
+    background: rgba(255,200,0,0.35)
+}
