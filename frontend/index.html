@@ -53,8 +53,9 @@
                     <div id="sortingSection" class="control-group">
                         <div class="config-header">
                             <div class="select-wrapper">
-                                <label for="algorithm">Algorithm</label>
-                                <select id="algorithm">
+                                <label for="algorithm">Load Template</label>
+                                <select id="algorithm" onchange="loadTemplate(this.value)">
+                                    <option value="" disabled selected>Choose Algorithm...</option>
                                     <option value="bubble_sort">Bubble Sort</option>
                                     <option value="insertion_sort">Insertion Sort</option>
                                     <option value="selection_sort">Selection Sort</option>
@@ -179,6 +180,7 @@
                     <h3>Live Visualization</h3>
                 </div>
                 <div class="visualizer-container">
+                    <div id="variableWatch" class="variable-watch-panel"></div>
                     <div id="bars" class="stage"></div>
                 </div>
             </section>

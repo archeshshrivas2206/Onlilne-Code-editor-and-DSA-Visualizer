@@ -2,6 +2,7 @@ let animationSteps = [];
 let currentStepIndex = 0;
 let isPlaying = false;
 let animationTimeout = null;
+let lastKnownVariables = {};
 
 async function runCode() {
     // Reset any ongoing animation
@@ -39,6 +40,8 @@ async function runCode() {
 
         animationSteps = data.steps || [];
         currentStepIndex = 0;
+        lastKnownVariables = {}; // Reset watch context
+        document.getElementById("variableWatch").innerHTML = "";
 
         if (animationSteps.length === 0) {
             alert("No steps returned from execution.");
@@ -140,6 +143,13 @@ function renderStep(index) {
         highlightLine(step.line);
     }
 
+    // Sync Variable Tracking Display
+    if (step.variables) {
+        // Merge with current knowledge to sustain older keys between lines
+        lastKnownVariables = { ...lastKnownVariables, ...step.variables };
+        renderVariablesPanel();
+    }
+
     // Render Visual Bars
     const container = document.getElementById("bars");
     if (!container) return;
@@ -178,5 +188,31 @@ function renderStep(index) {
         }
         
         container.appendChild(bar);
+    });
+}
+
+function renderVariablesPanel() {
+    const container = document.getElementById("variableWatch");
+    if (!container) return;
+    
+    container.innerHTML = "";
+    
+    // Filter out specific redundant or non-user variables (optional)
+    const entries = Object.entries(lastKnownVariables);
+    if (entries.length === 0) return;
+
+    entries.forEach(([name, value]) => {
+        // Skip the internally injected list usually named 'arr' (its visualized already)
+        if (name === 'arr' || typeof value === 'object') return;
+
+        const pill = document.createElement("div");
+        pill.className = "var-pill";
+        
+        pill.innerHTML = `
+            <span class="var-name">${name}</span>
+            <span class="var-val">${value}</span>
+        `;
+        
+        container.appendChild(pill);
     });
 }

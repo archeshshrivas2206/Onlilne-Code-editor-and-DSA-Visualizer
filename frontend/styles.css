@@ -424,3 +424,47 @@ button.btn-primary:active {
 .monaco-editor .margin, .monaco-editor, .monaco-editor-background {
     background-color: #1e1e1e !important;
 }
+
+/* Variable Tracking Debug Window */
+.variable-watch-panel {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 20;
+}
+
+.var-pill {
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Fira Code', monospace;
+    font-size: 0.8rem;
+    box-shadow: var(--shadow-md);
+    animation: slideInLeft 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    white-space: nowrap;
+}
+
+.var-name {
+    color: #a78bfa;
+    font-weight: bold;
+    font-size: 0.75rem;
+    text-transform: lowercase;
+}
+
+.var-val {
+    color: #34d399;
+    font-weight: 600;
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+}

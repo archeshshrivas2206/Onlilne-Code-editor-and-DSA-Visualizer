@@ -1,6 +1,57 @@
 let editor;
 let currentLineDecoration = [];
 
+/* -------------------- ALGORITHM TEMPLATES BANK -------------------- */
+const ALGO_TEMPLATES = {
+    bubble_sort: `def bubble_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            # Check if adjacent elements need swapping
+            if arr.compare(j, j + 1):
+                arr[j], arr[j+1] = arr[j+1], arr[j]`,
+
+    selection_sort: `def selection_sort(arr):
+    n = len(arr)
+    for i in range(n):
+        min_idx = i
+        for j in range(i + 1, n):
+            # Look for the minimum value dynamically
+            if arr.compare(min_idx, j):
+                min_idx = j
+        # Perform persistent swap if found
+        if min_idx != i:
+            arr[i], arr[min_idx] = arr[min_idx], arr[i]`,
+
+    insertion_sort: `def insertion_sort(arr):
+    n = len(arr)
+    for i in range(1, n):
+        j = i
+        while j > 0 and arr.compare(j-1, j):
+            arr[j-1], arr[j] = arr[j], arr[j-1]
+            j -= 1`,
+
+    quick_sort: `def quick_sort(arr):
+    # Entry wrapper for auto-detect
+    recursive_quick(arr, 0, len(arr) - 1)
+
+def recursive_quick(arr, low, high):
+    if low < high:
+        pi = partition(arr, low, high)
+        recursive_quick(arr, low, pi - 1)
+        recursive_quick(arr, pi + 1, high)
+
+def partition(arr, low, high):
+    pivot_idx = high
+    i = low - 1
+    for j in range(low, high):
+        if arr.compare(pivot_idx, j):
+            i += 1
+            arr[i], arr[j] = arr[j], arr[i]
+    arr[i+1], arr[high] = arr[high], arr[i+1]
+    return i + 1`
+};
+
 /* -------------------- LOAD MONACO AFTER PAGE LOAD -------------------- */
 
 window.onload = function () {
@@ -12,24 +63,12 @@ window.onload = function () {
     require(["vs/editor/editor.main"], function () {
 
         editor = monaco.editor.create(document.getElementById("editor"), {
-
-            value: `def bubble_sort(arr):
-
-    n = len(arr)
-
-    for i in range(n):
-        for j in range(n-1):
-
-            if arr.compare(j, j+1):
-
-                arr[j], arr[j+1] = arr[j+1], arr[j]`,
-
+            value: ALGO_TEMPLATES.bubble_sort,
             language: "python",
             theme: "vs-dark",
             automaticLayout: true,
             fontSize: 14,
             minimap: { enabled: false }
-
         });
 
     });
@@ -152,4 +191,15 @@ function changeMode(mode, element) {
 
     }
 
+}
+
+/* -------------------- TEMPLATE INJECTION -------------------- */
+function loadTemplate(key) {
+    if (!editor) return;
+    
+    const code = ALGO_TEMPLATES[key];
+    if (code) {
+        // Smoothly swap the model content
+        editor.setValue(code);
+    }
 }
