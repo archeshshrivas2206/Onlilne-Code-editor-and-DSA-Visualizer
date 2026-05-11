@@ -21,14 +21,14 @@ def execute_user_code(user_code: str, input_array: list, algorithm: str):
         def trace_lines(frame, event, arg):
 
             if event == "line":
-                lineno = frame.f_lineno
-
-                observable_arr.steps.append({
-                    "array": observable_arr.arr.copy(),
-                    "swap": None,
-                    "compare": None,
-                    "line": lineno
-                })
+                if frame.f_code.co_filename == "<string>":
+                    lineno = frame.f_lineno
+                    observable_arr.steps.append({
+                        "array": observable_arr.arr.copy(),
+                        "swap": None,
+                        "compare": None,
+                        "line": lineno
+                    })
 
             return trace_lines
 

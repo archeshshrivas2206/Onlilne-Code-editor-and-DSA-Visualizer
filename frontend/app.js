@@ -1,11 +1,12 @@
 let editor;
+let currentLineDecoration = [];
 
 /* -------------------- LOAD MONACO AFTER PAGE LOAD -------------------- */
 
 window.onload = function () {
 
     require.config({
-        paths: { vs: "https://unpkg.com/monaco-editor@0.44.0/min/vs" }
+        paths: { vs: "./node_modules/monaco-editor/min/vs" }
     });
 
     require(["vs/editor/editor.main"], function () {
@@ -36,9 +37,35 @@ window.onload = function () {
 };
 
 
+/* -------------------- MONACO LINE HIGHLIGHT -------------------- */
+
+function highlightLine(lineNumber) {
+
+    if (!editor) return;
+
+    currentLineDecoration = editor.deltaDecorations(
+        currentLineDecoration,
+        [
+            {
+                range: new monaco.Range(lineNumber, 1, lineNumber, 1),
+                options: {
+                    isWholeLine: true,
+                    className: "executingLine"
+                }
+            }
+        ]
+    );
+}
+
+
 /* -------------------- MODE SWITCHING -------------------- */
 
-function changeMode(mode) {
+function changeMode(mode, element) {
+
+    if (element) {
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+    }
 
     const sortingSection = document.getElementById("sortingSection");
     const stackSection = document.getElementById("stackControls");
@@ -53,12 +80,11 @@ function changeMode(mode) {
     /* Clear visualization */
     bars.innerHTML = "";
 
-    /* Reset layout to default */
+    /* Reset layout */
     bars.style.flexDirection = "row";
     bars.style.alignItems = "center";
 
-
-    /* Hide all sections */
+    /* Hide everything */
     sortingSection.style.display = "none";
     stackSection.style.display = "none";
     queueSection.style.display = "none";
@@ -66,7 +92,6 @@ function changeMode(mode) {
     treeSection.style.display = "none";
     treeTraversalSection.style.display = "none";
     graphSection.style.display = "none";
-
 
     /* Activate selected mode */
 

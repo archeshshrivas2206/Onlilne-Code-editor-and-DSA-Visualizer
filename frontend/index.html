@@ -1,136 +1,201 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <title>DSA Visualizer V1</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSA Visualizer Pro</title>
     <link rel="stylesheet" href="styles.css">
-    
+    <!-- Add modern font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 </head>
 
 <body>
 
-    <div class="app">
+    <div class="app-container">
 
-        <!-- LEFT SIDEBAR -->
-        <div class="sidebar">
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-icon">⚡</div>
+                <h2>DSA Visualizer</h2>
+            </div>
+            <nav class="nav-menu">
+                <button class="nav-item active" onclick="changeMode('sorting', this)">
+                    <span class="icon">📊</span> Sorting
+                </button>
+                <button class="nav-item" onclick="changeMode('stack', this)">
+                    <span class="icon">📚</span> Stack
+                </button>
+                <button class="nav-item" onclick="changeMode('queue', this)">
+                    <span class="icon">🚶</span> Queue
+                </button>
+                <button class="nav-item" onclick="changeMode('linkedlist', this)">
+                    <span class="icon">🔗</span> Linked List
+                </button>
+                <button class="nav-item" onclick="changeMode('tree', this)">
+                    <span class="icon">🌳</span> Binary Tree
+                </button>
+                <button class="nav-item" onclick="changeMode('graph', this)">
+                    <span class="icon">🕸️</span> Graph
+                </button>
+            </nav>
+        </aside>
 
-            <h2>DSA</h2>
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            
+            <!-- EDITOR AND CONTROLS PANEL -->
+            <section class="control-panel">
+                <div class="panel-card">
+                    
+                    <!-- SORTING SECTION -->
+                    <div id="sortingSection" class="control-group">
+                        <div class="config-header">
+                            <div class="select-wrapper">
+                                <label for="algorithm">Algorithm</label>
+                                <select id="algorithm">
+                                    <option value="bubble_sort">Bubble Sort</option>
+                                    <option value="insertion_sort">Insertion Sort</option>
+                                    <option value="selection_sort">Selection Sort</option>
+                                    <option value="merge_sort">Merge Sort</option>
+                                    <option value="quick_sort">Quick Sort</option>
+                                    <option value="heap_sort">Heap Sort</option>
+                                </select>
+                            </div>
+                            <div class="slider-wrapper">
+                                <label for="speed">Speed</label>
+                                <input type="range" id="speed" min="50" max="1000" step="50" value="500">
+                            </div>
+                        </div>
 
-            <button onclick="changeMode('sorting')">Sorting</button>
-            <button onclick="changeMode('stack')">Stack</button>
-            <button onclick="changeMode('queue')">Queue</button>
-            <button onclick="changeMode('linkedlist')">Linked List</button>
-            <button onclick="changeMode('tree')">Binary Tree</button>
-            <button onclick="changeMode('graph')">Graph</button>
+                        <div class="editor-container">
+                            <div class="editor-title">Python Implementation</div>
+                            <div id="editor" class="monaco-instance"></div>
+                        </div>
 
-        </div>
+                        <div class="action-footer">
+                            <div class="input-field">
+                                <input id="arrayInput" value="5,3,8,1" placeholder="Enter comma-separated values">
+                            </div>
+                            <div class="actions-row">
+                                <button class="btn-primary" onclick="runCode()">
+                                    <span class="btn-icon">🚀</span> Run
+                                </button>
+                                
+                                <!-- Playback Controls -->
+                                <div id="playbackControls" class="playback-strip" style="display:none;">
+                                    <button class="btn-ctrl" title="Step Back" onclick="stepBackward()">⏮</button>
+                                    <button class="btn-ctrl accent" id="playPauseBtn" title="Play / Pause" onclick="togglePlay()">▶</button>
+                                    <button class="btn-ctrl" title="Step Forward" onclick="stepForward()">⏭</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
+                    <!-- STACK SECTION -->
+                    <div id="stackControls" class="control-group" style="display:none;">
+                        <h3>Stack Operations</h3>
+                        <div class="action-footer compact">
+                            <input id="stackValue" placeholder="Value to push" class="input-sm">
+                            <button class="btn-action" onclick="pushStack()">Push</button>
+                            <button class="btn-action danger" onclick="popStack()">Pop</button>
+                        </div>
+                    </div>
 
-        <!-- CENTER PANEL -->
-        <div class="editor">
+                    <!-- QUEUE SECTION -->
+                    <div id="queueControls" class="control-group" style="display:none;">
+                        <h3>Queue Operations</h3>
+                        <div class="action-footer compact">
+                            <input id="queueValue" placeholder="Value to enqueue" class="input-sm">
+                            <button class="btn-action" onclick="enqueue()">Enqueue</button>
+                            <button class="btn-action danger" onclick="dequeue()">Dequeue</button>
+                        </div>
+                    </div>
 
-            <!-- ================= SORTING SECTION ================= -->
-            <div id="sortingSection">
+                    <!-- LINKED LIST SECTION -->
+                    <div id="linkedListControls" class="control-group" style="display:none;">
+                        <h3>Linked List Operations</h3>
+                        <div class="action-footer compact">
+                            <input id="llValue" placeholder="Value" class="input-sm">
+                            <button class="btn-action" onclick="insertNode()">Insert End</button>
+                            <button class="btn-action danger" onclick="deleteNode()">Delete Value</button>
+                        </div>
+                    </div>
 
-                <div style="margin-top:10px;">
-                    <select id="algorithm">
-                        <option value="bubble_sort">Bubble Sort</option>
-                        <option value="insertion_sort">Insertion Sort</option>
-                        <option value="selection_sort">Selection Sort</option>
-                        <option value="merge_sort">Merge Sort</option>
-                        <option value="quick_sort">Quick Sort</option>
-                        <option value="heap_sort">Heap Sort</option>
-                    </select>
+                    <!-- BST SECTION -->
+                    <div id="treeControls" class="control-group" style="display:none;">
+                        <h3>Binary Search Tree Operations</h3>
+                        <div class="action-footer compact">
+                            <input id="treeValue" placeholder="Value to insert" class="input-sm">
+                            <button class="btn-action" onclick="insertTree()">Insert</button>
+                        </div>
+                        <div id="treeTraversalControls" class="traversal-group" style="margin-top: 1rem;">
+                            <div class="button-grid">
+                                <button class="btn-outline" onclick="runTraversal('inorder')">Inorder</button>
+                                <button class="btn-outline" onclick="runTraversal('preorder')">Preorder</button>
+                                <button class="btn-outline" onclick="runTraversal('postorder')">Postorder</button>
+                                <button class="btn-outline" onclick="runTraversal('levelorder')">Level Order</button>
+                            </div>
+                            <div class="traversal-output">
+                                <span class="label">Output:</span> <span id="traversalOutput" class="result">-</span>
+                            </div>
+                        </div>
+                    </div>
 
-                    <label>Speed:</label>
-                    <input type="range" id="speed" min="50" max="1000" value="500">
+                    <!-- GRAPH SECTION -->
+                    <div id="graphControls" class="control-group" style="display:none;">
+                        <h3>Graph Operations</h3>
+                        <div class="sub-section">
+                            <div class="action-footer compact">
+                                <input id="nodeValue" placeholder="Node name" class="input-sm">
+                                <button class="btn-action" onclick="addNode()">Add Node</button>
+                            </div>
+                        </div>
+                        <div class="sub-section">
+                            <div class="action-footer compact">
+                                <input id="edgeFrom" placeholder="From" class="input-sm">
+                                <input id="edgeTo" placeholder="To" class="input-sm">
+                                <button class="btn-action" onclick="addEdge()">Connect</button>
+                            </div>
+                        </div>
+                        <div class="traversal-group">
+                            <div class="button-grid">
+                                <button class="btn-outline" onclick="runGraphTraversal('bfs')">BFS</button>
+                                <button class="btn-outline" onclick="runGraphTraversal('dfs')">DFS</button>
+                            </div>
+                            <div class="traversal-output">
+                                <span class="label">Output:</span> <span id="graphTraversalOutput" class="result">-</span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
+            </section>
 
-                <div id="editor" style="height:300px;border:1px solid #ccc;"></div>
+            <!-- VISUALIZATION PANEL -->
+            <section class="visual-panel">
+                <div class="panel-header">
+                    <h3>Live Visualization</h3>
+                </div>
+                <div class="visualizer-container">
+                    <div id="bars" class="stage"></div>
+                </div>
+            </section>
 
-                <input id="arrayInput" value="5,3,8,1" />
-                <button onclick="runCode()">Run</button>
-
-            </div>
-
-            <!-- ================= STACK SECTION ================= -->
-            <div id="stackControls" style="display:none; margin-top:15px;">
-                <input id="stackValue" placeholder="Value to push">
-                <button onclick="pushStack()">Push</button>
-                <button onclick="popStack()">Pop</button>
-            </div>
-            <!-- ================= QUEUE SECTION ================= -->
-
-            <div id="queueControls" style="display:none; margin-top:15px;">
-                <input id="queueValue" placeholder="Value to enqueue">
-                <button onclick="enqueue()">Enqueue</button>
-                <button onclick="dequeue()">Dequeue</button>
-            </div>
-            <!-- ================= LINKED LIST SECTION ================= -->
-            <div id="linkedListControls" style="display:none; margin-top:15px;">
-                <input id="llValue" placeholder="Value">
-                <button onclick="insertNode()">Insert At End</button>
-                <button onclick="deleteNode()">Delete By Value</button>
-            </div>
-            <!-- ================= BST SECTION ================= -->
-            <div id="treeControls" style="display:none; margin-top:15px;">
-                <input id="treeValue" placeholder="Value to insert">
-                <button onclick="insertTree()">Insert Node</button>
-            </div>
-            <div id="treeTraversalControls" style="display:none; margin-top:10px;">
-
-                <button onclick="runTraversal('inorder')">Inorder</button>
-                <button onclick="runTraversal('preorder')">Preorder</button>
-                <button onclick="runTraversal('postorder')">Postorder</button>
-                <button onclick="runTraversal('levelorder')">Level Order</button>
-
-                <p style="margin-top:10px;">
-                    Traversal Output: <span id="traversalOutput"></span>
-                </p>
-
-            </div>
-            <!-- ================= GRAPH SECTION ================= -->
-
-            <div id="graphControls" style="display:none; margin-top:15px;">
-
-                <input id="nodeValue" placeholder="Node label">
-                <button onclick="addNode()">Add Node</button>
-
-                <br><br>
-
-                <input id="edgeFrom" placeholder="From">
-                <input id="edgeTo" placeholder="To">
-                <button onclick="addEdge()">Add Edge</button>
-
-                <br><br>
-
-                <button onclick="runGraphTraversal('bfs')">BFS</button>
-                <button onclick="runGraphTraversal('dfs')">DFS</button>
-
-                <p>Traversal Output: <span id="graphTraversalOutput"></span></p>
-
-            </div>
-
-
-        </div>
-
-        <!-- RIGHT PANEL -->
-        <div class="visualization">
-
-            <div id="bars"></div>
-
-        </div>
+        </main>
 
     </div>
-    <script src="https://unpkg.com/monaco-editor@0.44.0/min/vs/loader.js"></script>
-    
-<script src="app.js" defer></script>
 
-<script src="visualizers/sorting.js" defer></script>
-<script src="visualizers/stack.js" defer></script>
-<script src="visualizers/queue.js" defer></script>
-<script src="visualizers/linkedlist.js" defer></script>
-<script src="visualizers/tree.js" defer></script>
-<script src="visualizers/graph.js" defer></script>
+    <!-- SCRIPTS -->
+    <script src="./node_modules/monaco-editor/min/vs/loader.js"></script>
+    <script src="app.js" defer></script>
+    <script src="visualizers/sorting.js" defer></script>
+    <script src="visualizers/stack.js" defer></script>
+    <script src="visualizers/queue.js" defer></script>
+    <script src="visualizers/linkedlist.js" defer></script>
+    <script src="visualizers/tree.js" defer></script>
+    <script src="visualizers/graph.js" defer></script>
 
+</body>
 </html>

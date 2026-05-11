@@ -1,4 +1,4 @@
-windows.linkedList = [];
+let linkedList = [];
 function insertNode() {
         const value = document.getElementById("llValue").value;
         if (value === "") return;
