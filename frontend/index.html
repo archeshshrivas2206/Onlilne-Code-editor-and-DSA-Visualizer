@@ -177,13 +177,11 @@
                     <div id="matrixControls" class="control-group" style="display:none;">
                         <h3>Matrix Operations</h3>
                         <div class="sub-section">
-                            <div class="action-footer compact">
-                                <label style="font-size: 0.85rem; color: var(--text-secondary);">Size:</label>
-                                <select id="matrixSize" class="input-sm" style="width: 80px; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" onchange="initMatrix()">
-                                    <option value="2">2 x 2</option>
-                                    <option value="3" selected>3 x 3</option>
-                                    <option value="4">4 x 4</option>
-                                </select>
+                            <div class="action-footer compact" style="gap: 8px;">
+                                <label style="font-size: 0.85rem; color: var(--text-secondary);">Rows:</label>
+                                <input type="number" id="matrixRows" class="input-sm" style="width: 55px; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" min="1" max="8" value="3" onchange="initMatrix()">
+                                <label style="font-size: 0.85rem; color: var(--text-secondary); margin-left: 4px;">Cols:</label>
+                                <input type="number" id="matrixCols" class="input-sm" style="width: 55px; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" min="1" max="8" value="3" onchange="initMatrix()">
                                 <button class="btn-action" onclick="randomizeMatrix()">Random</button>
                             </div>
                         </div>
