@@ -1,12 +1,12 @@
-let animationSteps = [];
-let currentStepIndex = 0;
-let isPlaying = false;
-let animationTimeout = null;
 let lastKnownVariables = {};
+let errorDecorations = [];
 
 async function runCode() {
-    // Reset any ongoing animation
-    stopAnimation();
+    // Stop any ongoing engine playback
+    if (window.engine) window.engine.stop();
+    
+    // Clear previous errors
+    clearEditorErrors();
 
     const code = editor ? editor.getValue() : "";
     const inputStr = document.getElementById("arrayInput").value.trim();
@@ -34,110 +34,116 @@ async function runCode() {
         const data = await response.json();
 
         if (data.error) {
-            alert("Backend Error: " + data.error);
+            showEditorError(data.error, data.error_line, data.error_type);
+            showConsoleOutput(data.console_output);
             return;
         }
 
-        animationSteps = data.steps || [];
-        currentStepIndex = 0;
-        lastKnownVariables = {}; // Reset watch context
+        // Show console output if any
+        showConsoleOutput(data.console_output);
+
+        const steps = data.steps || [];
+        lastKnownVariables = {};
         document.getElementById("variableWatch").innerHTML = "";
 
-        if (animationSteps.length === 0) {
+        if (steps.length === 0) {
             alert("No steps returned from execution.");
             return;
         }
 
-        // Show Playback UI
-        document.getElementById("playbackControls").style.display = "flex";
-        
-        // Start Playback automatically
-        startPlayback();
+        // Load steps into the global engine with our sorting-specific render function
+        window.engine.load(steps, renderSortingStep);
+        window.engine.autoPlay();
 
     } catch (err) {
         console.error("Failed to run code:", err);
-        alert("Network error: Could not connect to backend server.");
+        showEditorError("Network error: Could not connect to backend server.", null, "ConnectionError");
     }
 }
 
-function startPlayback() {
-    isPlaying = true;
-    updatePlayButtonUI();
-    playLoop();
-}
-
-function stopAnimation() {
-    isPlaying = false;
-    if (animationTimeout) {
-        clearTimeout(animationTimeout);
-        animationTimeout = null;
-    }
-    updatePlayButtonUI();
-}
-
-function togglePlay() {
-    if (isPlaying) {
-        stopAnimation();
-    } else {
-        // If completed, restart
-        if (currentStepIndex >= animationSteps.length - 1) {
-            currentStepIndex = 0;
-        }
-        startPlayback();
-    }
-}
-
-function updatePlayButtonUI() {
-    const btn = document.getElementById("playPauseBtn");
-    if (btn) {
-        btn.innerText = isPlaying ? "⏸" : "▶";
-    }
-}
-
-function playLoop() {
-    if (!isPlaying) return;
-
-    if (currentStepIndex >= animationSteps.length) {
-        stopAnimation();
+/**
+ * Display an error inline in Monaco editor with red squiggles + a toast banner.
+ */
+function showEditorError(message, line, errorType) {
+    if (!editor) {
+        alert(message);
         return;
     }
-
-    renderStep(currentStepIndex);
-    currentStepIndex++;
-
-    const speedSliderValue = document.getElementById("speed").value;
-    // Lower slider val should mean fast? Current html: min 50, max 1000.
-    // Let's calculate actual delay. 1050 - val will make sliding right (large value) mean smaller interval (faster).
-    // wait, user HTML usually does simple timeout. Let's just inverted so higher value means faster.
-    // Original code: const speed = speedValue; setTimeout(nextStep, speed);
-    // To feel logical: Invert so 1000 means fast, 50 means slow. Or keep it direct where Slider value = ms interval.
-    // Let's stick to direct MS interval for simplicity, but cap it minimum 20ms for smoothness.
-    const interval = Math.max(20, speedSliderValue);
     
-    animationTimeout = setTimeout(playLoop, interval);
-}
+    // Add Monaco marker (red squiggly underline)
+    if (line) {
+        const model = editor.getModel();
+        if (model) {
+            monaco.editor.setModelMarkers(model, 'python-errors', [{
+                startLineNumber: line,
+                startColumn: 1,
+                endLineNumber: line,
+                endColumn: model.getLineMaxColumn(line),
+                message: `${errorType || 'Error'}: ${message}`,
+                severity: monaco.MarkerSeverity.Error
+            }]);
+        }
 
-function stepForward() {
-    stopAnimation();
-    if (currentStepIndex < animationSteps.length - 1) {
-        currentStepIndex++;
-        renderStep(currentStepIndex);
+        // Also add a red line decoration
+        errorDecorations = editor.deltaDecorations(errorDecorations, [{
+            range: new monaco.Range(line, 1, line, 1),
+            options: {
+                isWholeLine: true,
+                className: 'errorLine',
+                glyphMarginClassName: 'errorGlyph'
+            }
+        }]);
+
+        // Scroll to the error line
+        editor.revealLineInCenter(line);
     }
-}
 
-function stepBackward() {
-    stopAnimation();
-    if (currentStepIndex > 0) {
-        currentStepIndex--;
-        renderStep(currentStepIndex);
+    // Show error toast
+    let toast = document.getElementById('errorToast');
+    if (!toast) {
+        toast = document.createElement('div');
+        toast.id = 'errorToast';
+        toast.className = 'error-toast';
+        const editorContainer = document.querySelector('.editor-container');
+        if (editorContainer) {
+            editorContainer.parentNode.insertBefore(toast, editorContainer.nextSibling);
+        } else {
+            document.body.appendChild(toast);
+        }
     }
-}
-
-function renderStep(index) {
-    if (index < 0 || index >= animationSteps.length) return;
-
-    const step = animationSteps[index];
     
+    toast.innerHTML = `
+        <div class="error-toast-header">
+            <span class="error-badge">${errorType || 'Error'}</span>
+            <button class="error-dismiss" onclick="clearEditorErrors()">✕</button>
+        </div>
+        <pre class="error-message">${message}</pre>
+        ${line ? `<span class="error-location">Line ${line}</span>` : ''}
+    `;
+    toast.style.display = 'block';
+}
+
+/**
+ * Clear all error markers, decorations, and toast from the editor.
+ */
+function clearEditorErrors() {
+    if (editor) {
+        const model = editor.getModel();
+        if (model) {
+            monaco.editor.setModelMarkers(model, 'python-errors', []);
+        }
+        errorDecorations = editor.deltaDecorations(errorDecorations, []);
+    }
+    
+    const toast = document.getElementById('errorToast');
+    if (toast) toast.style.display = 'none';
+}
+
+/**
+ * Sorting-specific step renderer.
+ * Called by the global engine for each frame.
+ */
+function renderSortingStep(step, index, allSteps) {
     // Sync line highlight in Monaco
     if (step.line && typeof highlightLine === "function") {
         highlightLine(step.line);
@@ -145,7 +151,6 @@ function renderStep(index) {
 
     // Sync Variable Tracking Display
     if (step.variables) {
-        // Merge with current knowledge to sustain older keys between lines
         lastKnownVariables = { ...lastKnownVariables, ...step.variables };
         renderVariablesPanel();
     }
@@ -157,33 +162,29 @@ function renderStep(index) {
     container.innerHTML = "";
 
     const arr = step.array || [];
-    const maxValue = Math.max(...arr, 1); // Avoid division by 0
+    const maxValue = Math.max(...arr, 1);
 
-    // Get container height for intelligent scaling
     const stageHeight = container.clientHeight || 400;
-    const availableHeight = stageHeight - 60; // padding
+    const availableHeight = stageHeight - 60;
 
     arr.forEach((val, idx) => {
         const bar = document.createElement("div");
         bar.classList.add("bar");
         
-        // Text Content
         bar.innerText = val;
 
-        // Height scaling
         const hPct = (val / maxValue) * availableHeight;
-        bar.style.height = Math.max(hPct, 25) + "px"; // Min height of 25px to keep it visible
+        bar.style.height = Math.max(hPct, 25) + "px";
 
-        // Color States based on steps
         let isSwap = (step.swap === idx);
         let isCompare = (step.compare && step.compare.includes(idx));
 
         if (isSwap) {
-            bar.style.background = "linear-gradient(to top, #ef4444, #b91c1c)"; // Danger Red
+            bar.style.background = "linear-gradient(to top, #ef4444, #b91c1c)";
             bar.style.boxShadow = "0 0 12px rgba(239, 68, 68, 0.6)";
-            bar.style.transform = "translateY(-4px)"; // subtle elevation effect
+            bar.style.transform = "translateY(-4px)";
         } else if (isCompare) {
-            bar.style.background = "linear-gradient(to top, #f59e0b, #d97706)"; // Warning Orange
+            bar.style.background = "linear-gradient(to top, #f59e0b, #d97706)";
             bar.style.boxShadow = "0 0 10px rgba(245, 158, 11, 0.5)";
         }
         
@@ -197,12 +198,10 @@ function renderVariablesPanel() {
     
     container.innerHTML = "";
     
-    // Filter out specific redundant or non-user variables (optional)
     const entries = Object.entries(lastKnownVariables);
     if (entries.length === 0) return;
 
     entries.forEach(([name, value]) => {
-        // Skip the internally injected list usually named 'arr' (its visualized already)
         if (name === 'arr' || typeof value === 'object') return;
 
         const pill = document.createElement("div");
@@ -215,4 +214,35 @@ function renderVariablesPanel() {
         
         container.appendChild(pill);
     });
+}
+
+/**
+ * Display console output from print() calls in the console panel.
+ */
+function showConsoleOutput(output) {
+    const panel = document.getElementById('consolePanel');
+    const body = document.getElementById('consoleOutput');
+    if (!panel || !body) return;
+
+    if (output && output.trim().length > 0) {
+        body.textContent = output;
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+        body.textContent = '';
+    }
+}
+
+function clearConsole() {
+    const body = document.getElementById('consoleOutput');
+    if (body) body.textContent = '';
+    const panel = document.getElementById('consolePanel');
+    if (panel) panel.style.display = 'none';
+}
+
+function toggleConsole() {
+    const body = document.getElementById('consoleOutput');
+    if (body) {
+        body.style.display = body.style.display === 'none' ? 'block' : 'none';
+    }
 }

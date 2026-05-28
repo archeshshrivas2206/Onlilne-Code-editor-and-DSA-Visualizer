@@ -49,7 +49,64 @@ def partition(arr, low, high):
             i += 1
             arr[i], arr[j] = arr[j], arr[i]
     arr[i+1], arr[high] = arr[high], arr[i+1]
-    return i + 1`
+    return i + 1`,
+
+    merge_sort: `def merge_sort(arr):
+    # In-place merge sort using ObservableArray
+    merge_sort_range(arr, 0, len(arr) - 1)
+
+def merge_sort_range(arr, left, right):
+    if left < right:
+        mid = (left + right) // 2
+        merge_sort_range(arr, left, mid)
+        merge_sort_range(arr, mid + 1, right)
+        merge(arr, left, mid, right)
+
+def merge(arr, left, mid, right):
+    # Copy values to temp arrays
+    left_vals = [arr[i] for i in range(left, mid + 1)]
+    right_vals = [arr[j] for j in range(mid + 1, right + 1)]
+    i = 0
+    j = 0
+    k = left
+    while i < len(left_vals) and j < len(right_vals):
+        if left_vals[i] <= right_vals[j]:
+            arr[k] = left_vals[i]
+            i += 1
+        else:
+            arr[k] = right_vals[j]
+            j += 1
+        k += 1
+    while i < len(left_vals):
+        arr[k] = left_vals[i]
+        i += 1
+        k += 1
+    while j < len(right_vals):
+        arr[k] = right_vals[j]
+        j += 1
+        k += 1`,
+
+    heap_sort: `def heap_sort(arr):
+    n = len(arr)
+    # Build max heap
+    for i in range(n // 2 - 1, -1, -1):
+        heapify(arr, n, i)
+    # Extract elements one by one
+    for i in range(n - 1, 0, -1):
+        arr[0], arr[i] = arr[i], arr[0]
+        heapify(arr, i, 0)
+
+def heapify(arr, n, i):
+    largest = i
+    left = 2 * i + 1
+    right = 2 * i + 2
+    if left < n and arr.compare(left, largest):
+        largest = left
+    if right < n and arr.compare(right, largest):
+        largest = right
+    if largest != i:
+        arr[i], arr[largest] = arr[largest], arr[i]
+        heapify(arr, n, largest)`
 };
 
 /* -------------------- LOAD MONACO AFTER PAGE LOAD -------------------- */
@@ -70,6 +127,11 @@ window.onload = function () {
             fontSize: 14,
             minimap: { enabled: false }
         });
+
+        // Initialize Global Playback Engine
+        if (window.engine) {
+            window.engine.init();
+        }
 
     });
 
@@ -113,11 +175,16 @@ function changeMode(mode, element) {
     const treeSection = document.getElementById("treeControls");
     const treeTraversalSection = document.getElementById("treeTraversalControls");
     const graphSection = document.getElementById("graphControls");
+    const matrixSection = document.getElementById("matrixControls");
 
     const bars = document.getElementById("bars");
 
+    /* Stop any active global playback */
+    if (window.engine) window.engine.stop();
+
     /* Clear visualization */
     bars.innerHTML = "";
+    document.getElementById("variableWatch").innerHTML = "";
 
     /* Reset layout */
     bars.style.flexDirection = "row";
@@ -131,6 +198,7 @@ function changeMode(mode, element) {
     treeSection.style.display = "none";
     treeTraversalSection.style.display = "none";
     graphSection.style.display = "none";
+    if (matrixSection) matrixSection.style.display = "none";
 
     /* Activate selected mode */
 
@@ -188,6 +256,21 @@ function changeMode(mode, element) {
 
         bars.style.flexDirection = "row";
         bars.style.alignItems = "center";
+
+    }
+
+    else if (mode === "matrix") {
+
+        if (matrixSection) matrixSection.style.display = "block";
+
+        bars.style.display = "flex";
+        bars.style.flexDirection = "column";
+        bars.style.alignItems = "center";
+        bars.style.justifyContent = "center";
+
+        if (window.initMatrix) {
+            window.initMatrix();
+        }
 
     }
 

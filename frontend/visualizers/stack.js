@@ -1,37 +1,91 @@
 let stack = [];
+let isAnimatingStack = false;
+
 function pushStack() {
-            const value = document.getElementById("stackValue").value;
+    if (isAnimatingStack) return;
+    const valueInput = document.getElementById("stackValue");
+    const value = valueInput.value;
     if (value === "") return;
 
     stack.push(Number(value));
-    document.getElementById("stackValue").value = "";
-    renderStack();
+    valueInput.value = "";
+    renderStack(stack.length - 1);
+}
+
+function popStack() {
+    if (isAnimatingStack || stack.length === 0) return;
+
+    isAnimatingStack = true;
+
+    const holder = document.getElementById("stackHolder");
+    if (holder && holder.childNodes.length > 0) {
+        const topNode = holder.lastChild;
+        if (topNode) {
+            topNode.classList.remove('animate-push');
+            topNode.classList.add('animate-pop');
         }
+    }
 
-    function popStack() {
-            if (stack.length === 0) return;
+    setTimeout(() => {
+        stack.pop();
+        renderStack();
+        isAnimatingStack = false;
+    }, 300);
+}
 
-    stack.pop();
-    renderStack();
-        }
-
-    function renderStack() {
-            const container = document.getElementById("bars");
+function renderStack(newIndex) {
+    const container = document.getElementById("bars");
     container.innerHTML = "";
 
-            stack.forEach((value) => {
-                const box = document.createElement("div");
-    box.style.width = "100px";
-    box.style.height = "40px";
-    box.style.background = "#28a745";
-    box.style.margin = "5px";
-    box.style.display = "flex";
-    box.style.alignItems = "center";
-    box.style.justifyContent = "center";
-    box.style.color = "white";
-    box.style.borderRadius = "5px";
-    box.innerText = value;
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
+    container.style.alignItems = "center";
+    container.style.justifyContent = "center";
+    container.style.padding = "20px";
+    container.style.position = "relative";
 
-    container.appendChild(box);
-            });
+    // Premium glassmorphic cylinder/holder
+    const holder = document.createElement("div");
+    holder.id = "stackHolder";
+    holder.style.display = "flex";
+    holder.style.flexDirection = "column-reverse";
+    holder.style.alignItems = "center";
+    holder.style.borderLeft = "3px solid rgba(255, 255, 255, 0.15)";
+    holder.style.borderRight = "3px solid rgba(255, 255, 255, 0.15)";
+    holder.style.borderBottom = "3px solid rgba(255, 255, 255, 0.25)";
+    holder.style.borderRadius = "0 0 12px 12px";
+    holder.style.padding = "15px 12px";
+    holder.style.minWidth = "150px";
+    holder.style.minHeight = "220px";
+    holder.style.background = "rgba(255, 255, 255, 0.02)";
+    holder.style.backdropFilter = "blur(4px)";
+    holder.style.boxShadow = "inset 0 0 20px rgba(255, 255, 255, 0.03)";
+    holder.style.gap = "8px";
+
+    stack.forEach((value, index) => {
+        const box = document.createElement("div");
+        box.style.width = "110px";
+        box.style.height = "42px";
+        box.style.background = "linear-gradient(135deg, #10b981, #059669)";
+        box.style.boxShadow = "0 4px 10px rgba(16, 185, 129, 0.3)";
+        box.style.display = "flex";
+        box.style.alignItems = "center";
+        box.style.justifyContent = "center";
+        box.style.color = "white";
+        box.style.borderRadius = "6px";
+        box.style.fontWeight = "bold";
+        box.style.fontSize = "1.05rem";
+        box.innerText = value;
+
+        if (newIndex !== undefined && index === newIndex) {
+            box.classList.add('animate-push');
         }
+
+        holder.appendChild(box);
+    });
+
+    container.appendChild(holder);
+}
+
+window.pushStack = pushStack;
+window.popStack = popStack;

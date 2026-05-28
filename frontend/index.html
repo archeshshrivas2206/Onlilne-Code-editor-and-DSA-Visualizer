@@ -39,6 +39,9 @@
                 <button class="nav-item" onclick="changeMode('graph', this)">
                     <span class="icon">🕸️</span> Graph
                 </button>
+                <button class="nav-item" onclick="changeMode('matrix', this)">
+                    <span class="icon">🔢</span> Matrix
+                </button>
             </nav>
         </aside>
 
@@ -64,10 +67,6 @@
                                     <option value="heap_sort">Heap Sort</option>
                                 </select>
                             </div>
-                            <div class="slider-wrapper">
-                                <label for="speed">Speed</label>
-                                <input type="range" id="speed" min="50" max="1000" step="50" value="500">
-                            </div>
                         </div>
 
                         <div class="editor-container">
@@ -83,13 +82,6 @@
                                 <button class="btn-primary" onclick="runCode()">
                                     <span class="btn-icon">🚀</span> Run
                                 </button>
-                                
-                                <!-- Playback Controls -->
-                                <div id="playbackControls" class="playback-strip" style="display:none;">
-                                    <button class="btn-ctrl" title="Step Back" onclick="stepBackward()">⏮</button>
-                                    <button class="btn-ctrl accent" id="playPauseBtn" title="Play / Pause" onclick="togglePlay()">▶</button>
-                                    <button class="btn-ctrl" title="Step Forward" onclick="stepForward()">⏭</button>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -122,14 +114,24 @@
                             <button class="btn-action" onclick="insertNode()">Insert End</button>
                             <button class="btn-action danger" onclick="deleteNode()">Delete Value</button>
                         </div>
+                        <div class="traversal-group" style="margin-top: 1rem;">
+                            <div class="button-grid">
+                                <button class="btn-outline" onclick="searchLL()">Search Value</button>
+                                <button class="btn-outline" onclick="traverseLL()">Traverse</button>
+                            </div>
+                            <div class="traversal-output">
+                                <span class="label">Status:</span> <span id="llTraversalOutput" class="result">-</span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- BST SECTION -->
                     <div id="treeControls" class="control-group" style="display:none;">
                         <h3>Binary Search Tree Operations</h3>
                         <div class="action-footer compact">
-                            <input id="treeValue" placeholder="Value to insert" class="input-sm">
+                            <input id="treeValue" placeholder="Value" class="input-sm">
                             <button class="btn-action" onclick="insertTree()">Insert</button>
+                            <button class="btn-action danger" onclick="deleteTreeNode()">Delete</button>
                         </div>
                         <div id="treeTraversalControls" class="traversal-group" style="margin-top: 1rem;">
                             <div class="button-grid">
@@ -171,6 +173,39 @@
                         </div>
                     </div>
 
+                    <!-- MATRIX SECTION -->
+                    <div id="matrixControls" class="control-group" style="display:none;">
+                        <h3>Matrix Operations</h3>
+                        <div class="sub-section">
+                            <div class="action-footer compact">
+                                <label style="font-size: 0.85rem; color: var(--text-secondary);">Size:</label>
+                                <select id="matrixSize" class="input-sm" style="width: 80px; background: var(--bg-primary); border: 1px solid var(--border-color); color: var(--text-primary); border-radius: 4px;" onchange="initMatrix()">
+                                    <option value="2">2 x 2</option>
+                                    <option value="3" selected>3 x 3</option>
+                                    <option value="4">4 x 4</option>
+                                </select>
+                                <button class="btn-action" onclick="randomizeMatrix()">Random</button>
+                            </div>
+                        </div>
+                        <div class="sub-section" style="margin-top: 10px;">
+                            <div class="action-footer compact" style="gap: 6px;">
+                                <input id="matrixInput" placeholder="Values (e.g. 1,2,3,4,5,6,7,8,9)" class="input-sm" style="flex: 1;">
+                                <button class="btn-action" onclick="loadUserMatrix()" style="white-space: nowrap;">Set Values</button>
+                            </div>
+                        </div>
+                        <div class="traversal-group" style="margin-top: 1rem;">
+                            <div class="button-grid" style="grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <button class="btn-outline" onclick="animateTranspose()">Transpose</button>
+                                <button class="btn-outline" onclick="animateRotate90()">Rotate 90°</button>
+                                <button class="btn-outline" onclick="animateMirror()">Mirror (Horiz)</button>
+                                <button class="btn-outline" onclick="animateInvert()">Invert Values</button>
+                            </div>
+                            <div class="traversal-output" style="margin-top: 10px;">
+                                <span class="label">Status:</span> <span id="matrixOutput" class="result">-</span>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </section>
 
@@ -178,10 +213,35 @@
             <section class="visual-panel">
                 <div class="panel-header">
                     <h3>Live Visualization</h3>
+                    <!-- Global Playback Controls -->
+                    <div id="globalPlaybackControls" class="global-playback" style="display:none;">
+                        <button class="btn-ctrl" title="Step Back" onclick="window.engine.stepBackward()">⏮</button>
+                        <button class="btn-ctrl accent" id="globalPlayPauseBtn" title="Play / Pause" onclick="window.engine.toggle()">▶</button>
+                        <button class="btn-ctrl" title="Step Forward" onclick="window.engine.stepForward()">⏭</button>
+                        <span id="stepCounter" class="step-counter">- / -</span>
+                        <div class="progress-track">
+                            <div id="progressFill" class="progress-fill"></div>
+                        </div>
+                        <div class="speed-control">
+                            <label for="globalSpeed">Speed</label>
+                            <input type="range" id="globalSpeed" min="50" max="1000" step="50" value="300">
+                        </div>
+                    </div>
                 </div>
                 <div class="visualizer-container">
                     <div id="variableWatch" class="variable-watch-panel"></div>
                     <div id="bars" class="stage"></div>
+                </div>
+                <!-- Console Output Panel -->
+                <div id="consolePanel" class="console-panel" style="display:none;">
+                    <div class="console-header">
+                        <span class="console-title">⌨ Console Output</span>
+                        <div class="console-actions">
+                            <button class="console-btn" onclick="clearConsole()" title="Clear">🗑</button>
+                            <button class="console-btn" onclick="toggleConsole()" title="Toggle">▼</button>
+                        </div>
+                    </div>
+                    <pre id="consoleOutput" class="console-body"></pre>
                 </div>
             </section>
 
@@ -191,6 +251,7 @@
 
     <!-- SCRIPTS -->
     <script src="./node_modules/monaco-editor/min/vs/loader.js"></script>
+    <script src="engine.js" defer></script>
     <script src="app.js" defer></script>
     <script src="visualizers/sorting.js" defer></script>
     <script src="visualizers/stack.js" defer></script>
@@ -198,6 +259,7 @@
     <script src="visualizers/linkedlist.js" defer></script>
     <script src="visualizers/tree.js" defer></script>
     <script src="visualizers/graph.js" defer></script>
+    <script src="visualizers/matrix.js" defer></script>
 
 </body>
 </html>
