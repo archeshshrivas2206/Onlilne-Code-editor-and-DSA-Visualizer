@@ -50,14 +50,14 @@ function renderQueue(newIndex) {
     holder.style.display = "flex";
     holder.style.flexDirection = "row";
     holder.style.alignItems = "center";
-    holder.style.borderTop = "3px solid rgba(255, 255, 255, 0.12)";
-    holder.style.borderBottom = "3px solid rgba(255, 255, 255, 0.12)";
+    holder.style.borderTop = "3px solid rgba(15, 23, 42, 0.12)";
+    holder.style.borderBottom = "3px solid rgba(15, 23, 42, 0.12)";
     holder.style.padding = "12px 20px";
     holder.style.minWidth = "320px";
     holder.style.minHeight = "80px";
-    holder.style.background = "rgba(255, 255, 255, 0.02)";
+    holder.style.background = "rgba(15, 23, 42, 0.02)";
     holder.style.backdropFilter = "blur(4px)";
-    holder.style.boxShadow = "inset 0 0 20px rgba(255, 255, 255, 0.03)";
+    holder.style.boxShadow = "inset 0 0 20px rgba(15, 23, 42, 0.03)";
     holder.style.borderRadius = "8px";
     holder.style.gap = "10px";
 

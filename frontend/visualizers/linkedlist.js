@@ -87,7 +87,7 @@ function renderLinkedList(highlightIndex, highlightState) {
                         arrow.style.margin = "0 10px";
                         arrow.style.fontSize = "22px";
                         arrow.style.fontWeight = "bold";
-                        arrow.style.color = "rgba(255, 255, 255, 0.4)";
+                        arrow.style.color = "rgba(15, 23, 42, 0.4)";
                         arrow.innerText = "→";
 
                         node.appendChild(arrow);

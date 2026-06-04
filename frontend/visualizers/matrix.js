@@ -66,11 +66,11 @@ function renderMatrixGrid(highlightCells) {
     const gridWrapper = document.createElement("div");
     gridWrapper.style.display = "flex";
     gridWrapper.style.flexDirection = "column";
-    gridWrapper.style.background = "rgba(255, 255, 255, 0.015)";
-    gridWrapper.style.border = "1px solid rgba(255, 255, 255, 0.08)";
+    gridWrapper.style.background = "rgba(15, 23, 42, 0.015)";
+    gridWrapper.style.border = "1px solid rgba(15, 23, 42, 0.08)";
     gridWrapper.style.borderRadius = "12px";
     gridWrapper.style.padding = "20px";
-    gridWrapper.style.boxShadow = "inset 0 0 30px rgba(255, 255, 255, 0.02)";
+    gridWrapper.style.boxShadow = "inset 0 0 30px rgba(15, 23, 42, 0.02)";
 
     // Compute cell dimensions dynamically based on max(rows, cols) to fit screen beautifully
     const maxDim = Math.max(rows, cols);
@@ -99,7 +99,7 @@ function renderMatrixGrid(highlightCells) {
         colIdx.style.justifyContent = "center";
         colIdx.style.fontSize = maxDim <= 5 ? "0.85rem" : "0.7rem";
         colIdx.style.fontWeight = "bold";
-        colIdx.style.color = "rgba(255, 255, 255, 0.35)";
+        colIdx.style.color = "rgba(15, 23, 42, 0.4)";
         colIdx.innerText = `c=${c}`;
         headerRow.appendChild(colIdx);
     }
@@ -119,7 +119,7 @@ function renderMatrixGrid(highlightCells) {
         rowLabel.style.paddingRight = "8px";
         rowLabel.style.fontSize = maxDim <= 5 ? "0.85rem" : "0.7rem";
         rowLabel.style.fontWeight = "bold";
-        rowLabel.style.color = "rgba(255, 255, 255, 0.35)";
+        rowLabel.style.color = "rgba(15, 23, 42, 0.4)";
         rowLabel.innerText = `r=${r}`;
         rowDiv.appendChild(rowLabel);
 
@@ -136,7 +136,7 @@ function renderMatrixGrid(highlightCells) {
             cellBox.style.flexDirection = "column";
             cellBox.style.alignItems = "center";
             cellBox.style.justifyContent = "center";
-            cellBox.style.color = "white";
+            cellBox.style.color = "var(--text-primary)";
             cellBox.style.transition = "all 0.2s ease";
             
             // Only draw coordinate tag if cell size permits
@@ -146,7 +146,7 @@ function renderMatrixGrid(highlightCells) {
                 coordTag.style.top = "4px";
                 coordTag.style.left = "6px";
                 coordTag.style.fontSize = coordFontSize;
-                coordTag.style.color = "rgba(255, 255, 255, 0.25)";
+                coordTag.style.color = "rgba(15, 23, 42, 0.4)";
                 coordTag.innerText = `[${r},${c}]`;
                 cellBox.appendChild(coordTag);
             }
@@ -165,16 +165,19 @@ function renderMatrixGrid(highlightCells) {
                 cellBox.style.transform = "scale(1.08)";
                 cellBox.style.border = "1px solid rgba(245, 158, 11, 0.6)";
                 cellBox.style.zIndex = "10";
+                cellBox.style.color = "white";
             } else if (highlightState === 'swapped') {
                 cellBox.style.background = "linear-gradient(135deg, #10b981, #059669)";
                 cellBox.style.boxShadow = "0 0 15px rgba(16, 185, 129, 0.4)";
                 cellBox.style.transform = "scale(1.08)";
                 cellBox.style.border = "1px solid rgba(16, 185, 129, 0.6)";
                 cellBox.style.zIndex = "10";
+                cellBox.style.color = "white";
             } else {
-                cellBox.style.background = "rgba(30, 41, 59, 0.6)";
-                cellBox.style.border = "1px solid rgba(255, 255, 255, 0.08)";
-                cellBox.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.2)";
+                cellBox.style.background = "rgba(15, 23, 42, 0.05)";
+                cellBox.style.border = "1px solid rgba(15, 23, 42, 0.08)";
+                cellBox.style.boxShadow = "0 2px 8px rgba(0, 0, 0, 0.05)";
+                cellBox.style.color = "var(--text-primary)";
             }
 
             rowDiv.appendChild(cellBox);

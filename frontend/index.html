@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DSA Visualizer Pro</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Add modern font -->
+    <!-- Add modern fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 </head>
 
@@ -18,34 +18,46 @@
         <aside class="sidebar">
             <div class="sidebar-header">
                 <div class="logo-icon">⚡</div>
-                <h2>DSA Visualizer</h2>
+                <div class="logo-text">
+                    <h2>DSA Visualizer</h2>
+                    <span class="logo-tag">playground v1.2.0</span>
+                </div>
             </div>
+            
             <nav class="nav-menu">
                 <button class="nav-item active" onclick="changeMode('sorting', this)">
-                    <span class="icon">📊</span> Sorting
+                    <svg class="nav-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Sorting
                 </button>
                 <button class="nav-item" onclick="changeMode('stack', this)">
-                    <span class="icon">📚</span> Stack
+                    <svg class="nav-icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> Stack
                 </button>
                 <button class="nav-item" onclick="changeMode('queue', this)">
-                    <span class="icon">🚶</span> Queue
+                    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 12h18M21 12l-4-4M21 12l-4 4"></path><circle cx="6" cy="12" r="3"></circle><circle cx="14" cy="12" r="3"></circle></svg> Queue
                 </button>
                 <button class="nav-item" onclick="changeMode('linkedlist', this)">
-                    <span class="icon">🔗</span> Linked List
+                    <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="9" width="5" height="6" rx="1"></rect><rect x="16" y="9" width="5" height="6" rx="1"></rect><path d="M8 12h8M13 9l3 3-3 3"></path></svg> Linked List
                 </button>
                 <button class="nav-item" onclick="changeMode('tree', this)">
-                    <span class="icon">🌳</span> Binary Tree
+                    <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"></circle><circle cx="6" cy="19" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="M12 8L7 16M12 8l5 8"></path></svg> Binary Tree
                 </button>
                 <button class="nav-item" onclick="changeMode('graph', this)">
-                    <span class="icon">🕸️</span> Graph
+                    <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M9 6h6M6 9v6M9 18h6M18 9v6M8 8l8 8M16 8l-8 8"></path></svg> Graph
                 </button>
                 <button class="nav-item" onclick="changeMode('matrix', this)">
-                    <span class="icon">🔢</span> Matrix
+                    <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg> Matrix
                 </button>
             </nav>
+            
+            <div class="sidebar-footer">
+                <div class="status-indicator">
+                    <span class="status-dot green"></span>
+                    <span class="status-text">Engine Ready</span>
+                </div>
+                <span class="built-by">Algorithms Lab</span>
+            </div>
         </aside>
 
-        <!-- MAIN CONTENT -->
+        <!-- MAIN LAYOUT CONTENT -->
         <main class="main-content">
             
             <!-- EDITOR AND CONTROLS PANEL -->
@@ -60,8 +72,8 @@
                                 <select id="algorithm" onchange="loadTemplate(this.value)">
                                     <option value="" disabled selected>Choose Algorithm...</option>
                                     <option value="bubble_sort">Bubble Sort</option>
-                                    <option value="insertion_sort">Insertion Sort</option>
                                     <option value="selection_sort">Selection Sort</option>
+                                    <option value="insertion_sort">Insertion Sort</option>
                                     <option value="merge_sort">Merge Sort</option>
                                     <option value="quick_sort">Quick Sort</option>
                                     <option value="heap_sort">Heap Sort</option>
@@ -69,18 +81,32 @@
                             </div>
                         </div>
 
+                        <!-- IDE Style Code Editor Container -->
                         <div class="editor-container">
-                            <div class="editor-title">Python Implementation</div>
+                            <div class="editor-header">
+                                <div class="window-dots">
+                                    <span class="dot red"></span>
+                                    <span class="dot yellow"></span>
+                                    <span class="dot green"></span>
+                                </div>
+                                <div class="editor-tabs">
+                                    <div class="editor-tab active">
+                                        <span class="tab-icon">🐍</span>
+                                        <span class="tab-title">main.py</span>
+                                    </div>
+                                </div>
+                            </div>
                             <div id="editor" class="monaco-instance"></div>
                         </div>
 
                         <div class="action-footer">
                             <div class="input-field">
+                                <label for="arrayInput">Array Inputs</label>
                                 <input id="arrayInput" value="5,3,8,1" placeholder="Enter comma-separated values">
                             </div>
                             <div class="actions-row">
                                 <button class="btn-primary" onclick="runCode()">
-                                    <span class="btn-icon">🚀</span> Run
+                                    <svg class="run-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Run
                                 </button>
                             </div>
                         </div>
@@ -210,8 +236,17 @@
             <!-- VISUALIZATION PANEL -->
             <section class="visual-panel">
                 <div class="panel-header">
-                    <h3>Live Visualization</h3>
-                    <!-- Global Playback Controls -->
+                    <h3>Simulation Canvas</h3>
+                </div>
+                
+                <div class="visualizer-container">
+                    <!-- Variable Watcher Panel -->
+                    <div id="variableWatch" class="variable-watch-panel"></div>
+                    
+                    <!-- Visualization Stage -->
+                    <div id="bars" class="stage"></div>
+
+                    <!-- Floating Playback controls deck -->
                     <div id="globalPlaybackControls" class="global-playback" style="display:none;">
                         <button class="btn-ctrl" title="Step Back" onclick="window.engine.stepBackward()">⏮</button>
                         <button class="btn-ctrl accent" id="globalPlayPauseBtn" title="Play / Pause" onclick="window.engine.toggle()">▶</button>
@@ -226,14 +261,16 @@
                         </div>
                     </div>
                 </div>
-                <div class="visualizer-container">
-                    <div id="variableWatch" class="variable-watch-panel"></div>
-                    <div id="bars" class="stage"></div>
-                </div>
-                <!-- Console Output Panel -->
+
+                <!-- macOS style Console Output Panel -->
                 <div id="consolePanel" class="console-panel" style="display:none;">
                     <div class="console-header">
-                        <span class="console-title">⌨ Console Output</span>
+                        <div class="window-dots">
+                            <span class="dot red"></span>
+                            <span class="dot yellow"></span>
+                            <span class="dot green"></span>
+                        </div>
+                        <span class="console-title">⌨ Terminal Console</span>
                         <div class="console-actions">
                             <button class="console-btn" onclick="clearConsole()" title="Clear">🗑</button>
                             <button class="console-btn" onclick="toggleConsole()" title="Toggle">▼</button>

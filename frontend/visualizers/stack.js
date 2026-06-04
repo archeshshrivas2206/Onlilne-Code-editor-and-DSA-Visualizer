@@ -50,16 +50,16 @@ function renderStack(newIndex) {
     holder.style.display = "flex";
     holder.style.flexDirection = "column-reverse";
     holder.style.alignItems = "center";
-    holder.style.borderLeft = "3px solid rgba(255, 255, 255, 0.15)";
-    holder.style.borderRight = "3px solid rgba(255, 255, 255, 0.15)";
-    holder.style.borderBottom = "3px solid rgba(255, 255, 255, 0.25)";
+    holder.style.borderLeft = "3px solid rgba(15, 23, 42, 0.12)";
+    holder.style.borderRight = "3px solid rgba(15, 23, 42, 0.12)";
+    holder.style.borderBottom = "3px solid rgba(15, 23, 42, 0.2)";
     holder.style.borderRadius = "0 0 12px 12px";
     holder.style.padding = "15px 12px";
     holder.style.minWidth = "150px";
     holder.style.minHeight = "220px";
-    holder.style.background = "rgba(255, 255, 255, 0.02)";
+    holder.style.background = "rgba(15, 23, 42, 0.02)";
     holder.style.backdropFilter = "blur(4px)";
-    holder.style.boxShadow = "inset 0 0 20px rgba(255, 255, 255, 0.03)";
+    holder.style.boxShadow = "inset 0 0 20px rgba(15, 23, 42, 0.03)";
     holder.style.gap = "8px";
 
     stack.forEach((value, index) => {

@@ -122,7 +122,7 @@ window.onload = function () {
         editor = monaco.editor.create(document.getElementById("editor"), {
             value: ALGO_TEMPLATES.bubble_sort,
             language: "python",
-            theme: "vs-dark",
+            theme: "vs",
             automaticLayout: true,
             fontSize: 14,
             minimap: { enabled: false }
