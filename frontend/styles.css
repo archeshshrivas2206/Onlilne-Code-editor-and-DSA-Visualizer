@@ -36,13 +36,16 @@ body {
     width: 6px;
     height: 6px;
 }
+
 ::-webkit-scrollbar-track {
     background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
     background: #cbd5e1;
     border-radius: 4px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
@@ -58,7 +61,7 @@ body {
 /* Sidebar Style (Left) */
 .sidebar {
     width: 260px;
-    background-color: var(--bg-secondary);
+    background: linear-gradient(180deg, #d6e3f4 0%, #e9ecef 100%);
     border-right: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
@@ -141,25 +144,103 @@ body {
 }
 
 .nav-item.active {
-    background: rgba(37, 99, 235, 0.08);
-    color: var(--primary-color);
-    border-left: 3px solid var(--primary-color);
-    border-radius: 0 8px 8px 0;
     font-weight: 600;
+    border-radius: 0 8px 8px 0;
+}
+
+.nav-item.sorting-tab.active {
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    border-left: 3.5px solid #ef4444;
+}
+
+.nav-item.stack-tab.active {
+    background: rgba(16, 185, 129, 0.08);
+    color: #10b981;
+    border-left: 3.5px solid #10b981;
+}
+
+.nav-item.queue-tab.active {
+    background: rgba(14, 165, 233, 0.08);
+    color: #0ea5e9;
+    border-left: 3.5px solid #0ea5e9;
+}
+
+.nav-item.linkedlist-tab.active {
+    background: rgba(139, 92, 246, 0.08);
+    color: #8b5cf6;
+    border-left: 3.5px solid #8b5cf6;
+}
+
+.nav-item.tree-tab.active {
+    background: rgba(245, 158, 11, 0.08);
+    color: #f59e0b;
+    border-left: 3.5px solid #f59e0b;
+}
+
+.nav-item.graph-tab.active {
+    background: rgba(99, 102, 241, 0.08);
+    color: #6366f1;
+    border-left: 3.5px solid #6366f1;
+}
+
+.nav-item.matrix-tab.active {
+    background: rgba(236, 72, 153, 0.08);
+    color: #ec4899;
+    border-left: 3.5px solid #ec4899;
 }
 
 .nav-icon {
     width: 18px;
     height: 18px;
-    stroke: currentColor;
-    stroke-width: 2;
     fill: none;
+    stroke-width: 2.2;
     stroke-linecap: round;
     stroke-linejoin: round;
     display: inline-block;
     vertical-align: middle;
     flex-shrink: 0;
-    transition: stroke 0.2s ease;
+    transition: all 0.25s ease;
+    opacity: 0.65;
+    margin-right: 8px;
+}
+
+.nav-icon.icon-sorting {
+    stroke: #ef4444;
+}
+
+.nav-icon.icon-stack {
+    stroke: #10b981;
+}
+
+.nav-icon.icon-queue {
+    stroke: #0ea5e9;
+}
+
+.nav-icon.icon-linkedlist {
+    stroke: #8b5cf6;
+}
+
+.nav-icon.icon-tree {
+    stroke: #f59e0b;
+}
+
+.nav-icon.icon-graph {
+    stroke: #6366f1;
+}
+
+.nav-icon.icon-matrix {
+    stroke: #ec4899;
+}
+
+.nav-item:hover .nav-icon {
+    opacity: 1;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+}
+
+.nav-item.active .nav-icon {
+    opacity: 1;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.05));
 }
 
 .sidebar-footer {
@@ -205,7 +286,7 @@ body {
     font-size: 0.75rem;
     font-weight: 500;
     color: var(--text-secondary);
-    background: var(--bg-accent);
+    background: var(--bg-secondary);
     padding: 6px 12px;
     border-radius: 6px;
     border: 1px solid var(--border-color);
@@ -232,6 +313,7 @@ body {
 /* Control Panel Section */
 .control-panel {
     padding: 20px;
+    background-color: var(--bg-primary);
     border-right: 1px solid var(--border-color);
     overflow-y: auto;
     display: flex;
@@ -261,7 +343,8 @@ body {
     margin-bottom: 20px;
 }
 
-.select-wrapper, .slider-wrapper {
+.select-wrapper,
+.slider-wrapper {
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -276,7 +359,10 @@ label {
     letter-spacing: 0.5px;
 }
 
-select, input[type="text"], .input-field input, .input-sm {
+select,
+input[type="text"],
+.input-field input,
+.input-sm {
     background: var(--bg-primary);
     border: 1px solid var(--border-color);
     color: var(--text-primary);
@@ -288,7 +374,8 @@ select, input[type="text"], .input-field input, .input-sm {
     font-size: 0.9rem;
 }
 
-select:focus, input:focus {
+select:focus,
+input:focus {
     border-color: var(--primary-color);
     background: var(--bg-secondary);
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
@@ -332,9 +419,17 @@ input[type="range"] {
     display: inline-block;
 }
 
-.window-dots .dot.red { background-color: #ef4444; }
-.window-dots .dot.yellow { background-color: #f59e0b; }
-.window-dots .dot.green { background-color: #10b981; }
+.window-dots .dot.red {
+    background-color: #ef4444;
+}
+
+.window-dots .dot.yellow {
+    background-color: #f59e0b;
+}
+
+.window-dots .dot.green {
+    background-color: #10b981;
+}
 
 .editor-tabs {
     flex: 1;
@@ -403,7 +498,7 @@ button.btn-primary {
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    background: linear-gradient(135deg, var(--primary-color), var(--primary-hover));
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
     color: white;
     border: none;
     padding: 10px 20px;
@@ -411,13 +506,13 @@ button.btn-primary {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.25);
     font-size: 0.9rem;
 }
 
 button.btn-primary:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.35);
 }
 
 button.btn-primary:active {
@@ -649,8 +744,12 @@ button.btn-primary:active {
 .visualizer-container {
     flex: 1;
     background-color: #f8fafc;
-    background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
-    background-size: 20px 20px;
+    background-image:
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 0%, rgba(236, 72, 153, 0.05) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(14, 165, 233, 0.05) 0px, transparent 50%),
+        radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+    background-size: auto, auto, auto, 20px 20px;
     border-radius: 12px;
     border: 1px solid var(--border-color);
     position: relative;
@@ -703,7 +802,9 @@ button.btn-primary:active {
 }
 
 /* Monaco Custom Overrides for light context */
-.monaco-editor .margin, .monaco-editor, .monaco-editor-background {
+.monaco-editor .margin,
+.monaco-editor,
+.monaco-editor-background {
     background-color: #ffffff !important;
 }
 
@@ -747,8 +848,15 @@ button.btn-primary:active {
 }
 
 @keyframes slideInLeft {
-    from { opacity: 0; transform: translateX(30px); }
-    to { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 /* Error Highlighting in Monaco Editor */
@@ -830,8 +938,15 @@ button.btn-primary:active {
 }
 
 @keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 /* macOS Terminal style Console Output Panel */
@@ -848,8 +963,8 @@ button.btn-primary:active {
     justify-content: space-between;
     align-items: center;
     padding: 10px 16px;
-    background: #0f172a;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    background: #e2e8f0;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .console-header .window-dots {
@@ -859,7 +974,7 @@ button.btn-primary:active {
 
 .console-title {
     font-size: 0.78rem;
-    color: #94a3b8;
+    color: var(--text-secondary);
     font-weight: 600;
     letter-spacing: 0.5px;
     font-family: 'Fira Code', monospace;
@@ -872,9 +987,9 @@ button.btn-primary:active {
 }
 
 .console-btn {
-    background: rgba(255, 255, 255, 0.05);
-    border: none;
-    color: #94a3b8;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
     cursor: pointer;
     font-size: 0.8rem;
     padding: 3px 8px;
@@ -883,13 +998,13 @@ button.btn-primary:active {
 }
 
 .console-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #ffffff;
+    background: var(--bg-accent);
+    color: var(--text-primary);
 }
 
 .console-body {
-    background: #0f172a;
-    color: #38bdf8;
+    background: #f8fafc;
+    color: #1e293b;
     font-family: 'Fira Code', monospace;
     font-size: 0.82rem;
     padding: 16px;
@@ -907,6 +1022,7 @@ button.btn-primary:active {
         opacity: 0;
         transform: translateY(-40px) scale(0.85);
     }
+
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
@@ -918,6 +1034,7 @@ button.btn-primary:active {
         opacity: 1;
         transform: translateY(0) scale(1);
     }
+
     to {
         opacity: 0;
         transform: translateY(-40px) scale(0.85);
@@ -929,6 +1046,7 @@ button.btn-primary:active {
         opacity: 0;
         transform: translateX(40px) scale(0.85);
     }
+
     to {
         opacity: 1;
         transform: translateX(0) scale(1);
@@ -940,6 +1058,7 @@ button.btn-primary:active {
         opacity: 1;
         transform: translateX(0) scale(1);
     }
+
     to {
         opacity: 0;
         transform: translateX(-40px) scale(0.85);
