@@ -37,7 +37,7 @@ export default function usePlayback(initialSpeed = 300) {
     }, speed);
 
     return () => clearTimeout(timer);
-  }, [isPlaying, currentIdx, steps.length, speed]);
+  }, [isPlaying, currentIdx, steps, speed]);
 
   const load = (newSteps, onComplete = null) => {
     setSteps(newSteps);

@@ -27,18 +27,20 @@ export default function MatrixVisualizer({ matrix, playback }) {
         justifyContent: 'center',
         gap: '10px',
         padding: '25px',
-        height: '100%'
+        height: '100%',
+        overflow: 'auto'
       }}
     >
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
-          background: 'rgba(255, 255, 255, 0.015)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          borderRadius: '12px',
-          padding: '20px',
-          boxShadow: 'inset 0 0 30px rgba(0, 0, 0, 0.2)',
+          background: 'var(--bg-panel)',
+          backdropFilter: 'blur(8px)',
+          border: '1px solid var(--border-color)',
+          borderRadius: '16px',
+          padding: '24px',
+          boxShadow: 'var(--shadow-md)',
           gap: gapSize
         }}
       >
@@ -53,8 +55,9 @@ export default function MatrixVisualizer({ matrix, playback }) {
                 display: 'flex',
                 justifyContent: 'center',
                 fontSize: maxDim <= 5 ? '0.85rem' : '0.7rem',
-                fontWeight: 'bold',
-                color: 'rgba(255, 255, 255, 0.35)'
+                fontWeight: '600',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-secondary)'
               }}
             >
               c={c}
@@ -72,8 +75,9 @@ export default function MatrixVisualizer({ matrix, playback }) {
                 justifyContent: 'flex-end',
                 paddingRight: '8px',
                 fontSize: maxDim <= 5 ? '0.85rem' : '0.7rem',
-                fontWeight: 'bold',
-                color: 'rgba(255, 255, 255, 0.35)'
+                fontWeight: '600',
+                fontFamily: 'var(--font-mono)',
+                color: 'var(--text-secondary)'
               }}
             >
               r={r}
@@ -85,25 +89,25 @@ export default function MatrixVisualizer({ matrix, playback }) {
                 ? currentStep.highlights[cellKey]
                 : null;
 
-              let cellBg = 'rgba(255, 255, 255, 0.05)';
-              let border = '1px solid rgba(255, 255, 255, 0.08)';
-              let boxShadow = '0 2px 8px rgba(0, 0, 0, 0.2)';
+              let cellBg = 'var(--bg-card)';
+              let border = '1px solid var(--border-color)';
+              let boxShadow = 'var(--shadow-sm)';
               let scale = '1';
               let color = 'var(--text-primary)';
               let zIndex = '1';
 
               if (highlightState === 'checking') {
                 cellBg = 'linear-gradient(135deg, #fbbf24, #d97706)';
-                boxShadow = '0 0 15px rgba(251, 191, 36, 0.4)';
+                boxShadow = '0 8px 20px rgba(251, 191, 36, 0.35)';
                 scale = '1.08';
-                border = '1px solid rgba(251, 191, 36, 0.6)';
+                border = '1px solid #d97706';
                 zIndex = '10';
                 color = 'white';
               } else if (highlightState === 'swapped') {
                 cellBg = 'linear-gradient(135deg, #10b981, #059669)';
-                boxShadow = '0 0 15px rgba(16, 185, 129, 0.4)';
+                boxShadow = '0 8px 20px rgba(16, 185, 129, 0.35)';
                 scale = '1.08';
-                border = '1px solid rgba(16, 185, 129, 0.6)';
+                border = '1px solid #059669';
                 zIndex = '10';
                 color = 'white';
               }
@@ -132,7 +136,8 @@ export default function MatrixVisualizer({ matrix, playback }) {
                         top: '4px',
                         left: '6px',
                         fontSize: coordFontSize,
-                        color: highlightState ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.3)'
+                        fontFamily: 'var(--font-mono)',
+                        color: highlightState ? 'rgba(255, 255, 255, 0.8)' : 'var(--text-muted)'
                       }}
                     >
                       [{r},{c}]

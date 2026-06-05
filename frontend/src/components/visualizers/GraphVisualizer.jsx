@@ -33,7 +33,7 @@ export default function GraphVisualizer({ graph, graphNodes, playback }) {
   const currentStep = playback.currentStep;
   const isRunning = playback.steps.length > 0;
   const highlightNode = isRunning && currentStep ? currentStep.currentNode : null;
-  const visitedSet = isRunning && currentStep ? (currentStep.visitedSoFar || new Set()) : new Set();
+  const visitedData = isRunning && currentStep ? (currentStep.visitedSoFar || []) : [];
 
   return (
     <div
@@ -70,7 +70,9 @@ export default function GraphVisualizer({ graph, graphNodes, playback }) {
         if (!pos) return null;
 
         const isCurrent = highlightNode === node;
-        const isVisited = visitedSet.has(node);
+        const isVisited = Array.isArray(visitedData)
+          ? visitedData.includes(node)
+          : (visitedData instanceof Set ? visitedData.has(node) : false);
 
         let background = 'linear-gradient(135deg, #3b82f6, #2563eb)';
         let boxShadow = '0 2px 8px rgba(59, 130, 246, 0.3)';
