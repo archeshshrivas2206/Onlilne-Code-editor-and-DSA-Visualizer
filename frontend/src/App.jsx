@@ -345,10 +345,37 @@ export default function App() {
       setConsoleOutput(data.console_output || '');
       if (data.console_output) setConsoleVisible(true);
 
-      const steps = data.steps || [];
-      if (steps.length === 0) {
+      const rawSteps = data.steps || [];
+      if (rawSteps.length === 0) {
         alert("No steps returned from execution.");
         return;
+      }
+
+      // Post-process steps: merge consecutive swap pairs into single clean steps.
+      // Python's "a[i], a[j] = a[j], a[i]" fires __setitem__ twice, producing:
+      //   Step N:   swap=i  (intermediate — arr[i] overwritten, arr[j] unchanged → broken duplicate state)
+      //   Step N+1: swap=j  (completed   — arr[j] now also overwritten → final correct state)
+      // We skip the broken intermediate and keep only the completed step, marking both indices as swapping.
+      const steps = [];
+      for (let i = 0; i < rawSteps.length; i++) {
+        const curr = rawSteps[i];
+        const next = rawSteps[i + 1];
+
+        // Detect a swap pair: two consecutive steps both with a non-null swap index
+        if (
+          curr.swap !== null && curr.swap !== undefined &&
+          next && next.swap !== null && next.swap !== undefined
+        ) {
+          // Keep the SECOND step (completed state) but mark both indices as swapping
+          steps.push({
+            ...next,
+            swap: [curr.swap, next.swap],    // array of both swapped indices
+            compare: next.compare || curr.compare
+          });
+          i++; // skip the intermediate step
+        } else {
+          steps.push(curr);
+        }
       }
 
       playback.load(steps);
