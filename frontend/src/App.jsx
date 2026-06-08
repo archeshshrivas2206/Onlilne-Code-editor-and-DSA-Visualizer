@@ -1358,7 +1358,18 @@ export default function App() {
                     options={{
                       automaticLayout: true,
                       fontSize: 14,
-                      minimap: { enabled: false }
+                      fontFamily: "'Fira Code', var(--font-mono), monospace",
+                      fontLigatures: true,
+                      minimap: { enabled: false },
+                      cursorBlinking: 'smooth',
+                      cursorSmoothCaretAnimation: 'on',
+                      smoothScrolling: true,
+                      padding: { top: 12, bottom: 12 },
+                      roundedSelection: true,
+                      scrollbar: {
+                        verticalScrollbarSize: 8,
+                        horizontalScrollbarSize: 8,
+                      }
                     }}
                   />
                 </div>
@@ -1385,6 +1396,13 @@ export default function App() {
               <div className="output-content">
                 {activeRightTab === 'console' && (
                   <div className="console-tab-content">
+                    {consoleOutput && (
+                      <div className="console-tab-actions">
+                        <button className="console-clear-btn" onClick={() => setConsoleOutput('')}>
+                          🗑️ Clear Output
+                        </button>
+                      </div>
+                    )}
                     {consoleOutput ? (
                       <pre className="console-body inline-console">{consoleOutput}</pre>
                     ) : (
@@ -1540,10 +1558,19 @@ export default function App() {
                                     readOnly: true,
                                     minimap: { enabled: false },
                                     fontSize: 12,
+                                    fontFamily: "'Fira Code', var(--font-mono), monospace",
+                                    fontLigatures: true,
                                     automaticLayout: true,
                                     scrollBeyondLastLine: false,
                                     lineNumbers: 'on',
                                     folding: false,
+                                    cursorBlinking: 'smooth',
+                                    cursorSmoothCaretAnimation: 'on',
+                                    smoothScrolling: true,
+                                    scrollbar: {
+                                      verticalScrollbarSize: 6,
+                                      horizontalScrollbarSize: 6,
+                                    }
                                   }}
                                 />
                               </div>

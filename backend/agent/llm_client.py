@@ -8,9 +8,6 @@ from google.genai import types
 from agent.prompts import build_prompt, SYSTEM_INSTRUCTION
 from dotenv import load_dotenv
 
-load_dotenv()
-
-_API_KEY = os.getenv("GEMINI_API_KEY", "")
 _MODEL_NAME = "gemini-2.5-flash"
 
 
@@ -22,10 +19,12 @@ def generate_report(code: str, tool_outputs: dict) -> dict:
     Tries gemini-2.5-flash, then falls back to gemini-2.5-flash-lite if the former is busy/503.
     Also handles 503/429 transient rate limits with exponential retries.
     """
-    if not _API_KEY:
+    load_dotenv()
+    api_key = os.getenv("GEMINI_API_KEY", "")
+    if not api_key:
         return {"error": "GEMINI_API_KEY is not set in .env"}
 
-    client = genai.Client(api_key=_API_KEY)
+    client = genai.Client(api_key=api_key)
     prompt = build_prompt(code, tool_outputs)
     
     # Ordered list of models to try in case of server overload (503 / 429)
