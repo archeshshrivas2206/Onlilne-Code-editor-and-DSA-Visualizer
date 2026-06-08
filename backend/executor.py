@@ -79,7 +79,13 @@ def execute_user_code(user_code: str, input_array: list, algorithm: str):
         sys.settrace(trace_lines)
 
         # Run algorithm
-        algo_function(observable_arr)
+        import inspect
+        sig = inspect.signature(algo_function)
+        params = list(sig.parameters.values())
+        if len(params) == 0:
+            algo_function()
+        else:
+            algo_function(observable_arr)
 
         # Stop tracing & restore stdout
         sys.settrace(None)
