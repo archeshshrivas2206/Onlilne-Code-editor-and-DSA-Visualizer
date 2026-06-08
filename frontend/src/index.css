@@ -1159,3 +1159,55 @@ button.btn-primary:active {
   background: #0f172a;
   text-align: left;
 }
+
+/* ────────────────────────────────────────────────
+   AI REVIEW PANEL
+──────────────────────────────────────────────── */
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* Spinning loader inside the button */
+.review-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: reviewSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes reviewSpin {
+  to { transform: rotate(360deg); }
+}
+
+/* Indeterminate progress bar shown while agent is working */
+.review-progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(99, 102, 241, 0.15);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+.review-progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0; left: -40%;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, #6366f1, #8b5cf6, transparent);
+  border-radius: 2px;
+  animation: reviewProgress 1.4s ease-in-out infinite;
+}
+@keyframes reviewProgress {
+  0%   { left: -40%; }
+  100% { left: 110%; }
+}
+
+/* Panel scrollbar styling */
+#ai-review-panel::-webkit-scrollbar { width: 5px; }
+#ai-review-panel::-webkit-scrollbar-track { background: transparent; }
+#ai-review-panel::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 3px; }

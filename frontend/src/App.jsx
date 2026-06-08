@@ -10,6 +10,7 @@ import LinkedListVisualizer from './components/visualizers/LinkedListVisualizer'
 import TreeVisualizer from './components/visualizers/TreeVisualizer';
 import GraphVisualizer from './components/visualizers/GraphVisualizer';
 import MatrixVisualizer from './components/visualizers/MatrixVisualizer';
+import ReviewPanel from './ai-review/ReviewPanel';
 
 /* -------------------- ALGORITHM TEMPLATES -------------------- */
 const ALGO_TEMPLATES = {
@@ -1243,6 +1244,11 @@ export default function App() {
                     <button className="btn-primary" onClick={runSortingCode}>
                       <svg className="run-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Run
                     </button>
+                    <ReviewPanel
+                      editorRef={editorRef}
+                      playback={playback}
+                      isDarkMode={isDarkMode}
+                    />
                   </div>
                 </div>
 
