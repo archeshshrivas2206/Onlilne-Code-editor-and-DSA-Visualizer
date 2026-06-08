@@ -120,6 +120,30 @@ def heapify(arr, n, i):
         heapify(arr, n, largest)`
 };
 
+const DEFAULT_PLAYGROUND_CODE = `# DSA Visualizer Playground
+# Write your custom Python code here and click "Run" or "Analyse with AI"
+
+def main():
+    print("Welcome to the DSA Playground!")
+    
+    # Example: Linear search
+    arr = [12, 34, 54, 2, 3]
+    target = 2
+    
+    found = False
+    for i, val in enumerate(arr):
+        if val == target:
+            print(f"Found {target} at index {i}")
+            found = True
+            break
+            
+    if not found:
+        print(f"{target} not found")
+
+if __name__ == "__main__":
+    main()
+`;
+
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('theme');
@@ -136,9 +160,15 @@ export default function App() {
     }
   }, [isDarkMode]);
 
-  const [mode, setMode] = useState('sorting');
+  const [mode, setMode] = useState('ide');
+  const [ideCode, setIdeCode] = useState(DEFAULT_PLAYGROUND_CODE);
+  const [activeRightTab, setActiveRightTab] = useState('console');
+  const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewReport, setReviewReport] = useState(null);
+  const [reviewError, setReviewError] = useState(null);
+
   const [algorithm, setAlgorithm] = useState('bubble_sort');
-  const [editorValue, setEditorValue] = useState(ALGO_TEMPLATES.bubble_sort);
+  const [editorValue, setEditorValue] = useState(DEFAULT_PLAYGROUND_CODE);
   const [arrayInputValue, setArrayInputValue] = useState('5,3,8,1');
   const [arrayInput, setArrayInput] = useState([5, 3, 8, 1]);
 
@@ -215,11 +245,30 @@ export default function App() {
 
   // Switch modes
   const handleModeChange = (newMode) => {
+    // Save current IDE code if we are in IDE mode
+    if (mode === 'ide' && editorRef.current) {
+      setIdeCode(editorRef.current.getValue());
+    }
+
     setMode(newMode);
     playback.stop();
     clearEditorErrors();
     setConsoleOutput('');
     setConsoleVisible(false);
+
+    if (newMode === 'ide') {
+      const codeToSet = ideCode || DEFAULT_PLAYGROUND_CODE;
+      setEditorValue(codeToSet);
+      if (editorRef.current) {
+        editorRef.current.setValue(codeToSet);
+      }
+    } else if (newMode === 'sorting') {
+      const codeToSet = ALGO_TEMPLATES[algorithm] || ALGO_TEMPLATES.bubble_sort;
+      setEditorValue(codeToSet);
+      if (editorRef.current) {
+        editorRef.current.setValue(codeToSet);
+      }
+    }
     
     // Matrix initialization logic on tab focus
     if (newMode === 'matrix') {
@@ -305,23 +354,28 @@ export default function App() {
     errorDecorationsRef.current = editorRef.current.deltaDecorations(errorDecorationsRef.current, []);
   };
 
-  /* -------------------- CODE EXECUTION (SORTING) -------------------- */
+  /* -------------------- CODE EXECUTION -------------------- */
   const runSortingCode = async () => {
     playback.stop();
     clearEditorErrors();
 
+    const isIde = mode === 'ide';
     const code = editorRef.current ? editorRef.current.getValue() : editorValue;
-    if (!arrayInputValue.trim()) {
-      alert("Please enter numbers for the array input.");
-      return;
+    
+    let parsedArray = [];
+    if (!isIde) {
+      if (!arrayInputValue.trim()) {
+        alert("Please enter numbers for the array input.");
+        return;
+      }
+      parsedArray = arrayInputValue
+        .split(',')
+        .map(num => Number(num.trim()))
+        .filter(val => !isNaN(val));
+      setArrayInput(parsedArray);
+    } else {
+      setActiveRightTab('console');
     }
-
-    const parsedArray = arrayInputValue
-      .split(',')
-      .map(num => Number(num.trim()))
-      .filter(val => !isNaN(val));
-
-    setArrayInput(parsedArray);
 
     try {
       const response = await fetch("http://127.0.0.1:8000/run", {
@@ -330,7 +384,7 @@ export default function App() {
         body: JSON.stringify({
           code: code,
           input_array: parsedArray,
-          algorithm: algorithm
+          algorithm: isIde ? "" : algorithm
         })
       });
 
@@ -339,12 +393,16 @@ export default function App() {
       if (data.error) {
         showEditorError(data.error, data.error_line, data.error_type);
         setConsoleOutput(data.console_output || '');
-        if (data.console_output) setConsoleVisible(true);
+        if (data.console_output && !isIde) setConsoleVisible(true);
         return;
       }
 
       setConsoleOutput(data.console_output || '');
-      if (data.console_output) setConsoleVisible(true);
+      if (data.console_output && !isIde) setConsoleVisible(true);
+
+      if (isIde) {
+        return;
+      }
 
       const rawSteps = data.steps || [];
       if (rawSteps.length === 0) {
@@ -353,10 +411,6 @@ export default function App() {
       }
 
       // Post-process steps: merge consecutive swap pairs into single clean steps.
-      // Python's "a[i], a[j] = a[j], a[i]" fires __setitem__ twice, producing:
-      //   Step N:   swap=i  (intermediate — arr[i] overwritten, arr[j] unchanged → broken duplicate state)
-      //   Step N+1: swap=j  (completed   — arr[j] now also overwritten → final correct state)
-      // We skip the broken intermediate and keep only the completed step, marking both indices as swapping.
       const steps = [];
       for (let i = 0; i < rawSteps.length; i++) {
         const curr = rawSteps[i];
@@ -384,6 +438,44 @@ export default function App() {
     } catch (err) {
       console.error("Failed to run code:", err);
       showEditorError("Network error: Could not connect to backend server.", null, "ConnectionError");
+    }
+  };
+
+  /* -------------------- AI REVIEW RUNNER -------------------- */
+  const runAiReview = async () => {
+    const code = editorRef.current ? editorRef.current.getValue() : editorValue;
+    if (!code.trim()) {
+      setReviewError('No code in the editor to review.');
+      return;
+    }
+
+    setReviewLoading(true);
+    setReviewError(null);
+    setReviewReport(null);
+    setActiveRightTab('review');
+
+    try {
+      const res = await fetch('http://127.0.0.1:8000/review', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, trace: playback?.steps || [] }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || `Server error ${res.status}`);
+      }
+
+      const data = await res.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      setReviewReport(data);
+    } catch (e) {
+      setReviewError(e.message || 'Unknown error occurred.');
+    } finally {
+      setReviewLoading(false);
     }
   };
 
@@ -1114,14 +1206,82 @@ export default function App() {
     <div className="app-container">
       {/* SIDEBAR NAVIGATION */}
       <aside className="sidebar">
-        <div className="sidebar-header" style={{ justifyContent: 'space-between', width: '100%' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div className="sidebar-top">
+          <div className="logo-icon-container" title="DSA Visualizer Playground">
             <div className="logo-icon">⚡</div>
-            <div className="logo-text">
-              <h2>DSA Visualizer</h2>
-              <span className="logo-tag">playground v1.2.0</span>
-            </div>
           </div>
+          <nav className="nav-menu">
+            <button className={`nav-item ide-tab ${mode === 'ide' ? 'active' : ''}`} onClick={() => handleModeChange('ide')} title="Playground IDE">
+              <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="16 18 22 12 16 6"></polyline>
+                <polyline points="8 6 2 12 8 18"></polyline>
+              </svg>
+              <span className="nav-item-label">IDE</span>
+            </button>
+            <button className={`nav-item sorting-tab ${mode === 'sorting' ? 'active' : ''}`} onClick={() => handleModeChange('sorting')} title="Sorting Visualizer">
+              <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg>
+              <span className="nav-item-label">Sorting</span>
+            </button>
+            <button className={`nav-item stack-tab ${mode === 'stack' ? 'active' : ''}`} onClick={() => handleModeChange('stack')} title="Stack Visualizer">
+              <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                <polyline points="2 17 12 22 22 17"></polyline>
+                <polyline points="2 12 12 17 22 12"></polyline>
+              </svg>
+              <span className="nav-item-label">Stack</span>
+            </button>
+            <button className={`nav-item queue-tab ${mode === 'queue' ? 'active' : ''}`} onClick={() => handleModeChange('queue')} title="Queue Visualizer">
+              <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12h18M21 12l-4-4M21 12l-4 4"></path>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="14" cy="12" r="3"></circle>
+              </svg>
+              <span className="nav-item-label">Queue</span>
+            </button>
+            <button className={`nav-item linkedlist-tab ${mode === 'linkedlist' ? 'active' : ''}`} onClick={() => handleModeChange('linkedlist')} title="Linked List Visualizer">
+              <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="9" width="5" height="6" rx="1"></rect>
+                <rect x="16" y="9" width="5" height="6" rx="1"></rect>
+                <path d="M8 12h8M13 9l3 3-3 3"></path>
+              </svg>
+              <span className="nav-item-label">Lists</span>
+            </button>
+            <button className={`nav-item tree-tab ${mode === 'tree' ? 'active' : ''}`} onClick={() => handleModeChange('tree')} title="Binary Tree Visualizer">
+              <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="5" r="3"></circle>
+                <circle cx="6" cy="19" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <path d="M12 8L7 16M12 8l5 8"></path>
+              </svg>
+              <span className="nav-item-label">Trees</span>
+            </button>
+            <button className={`nav-item graph-tab ${mode === 'graph' ? 'active' : ''}`} onClick={() => handleModeChange('graph')} title="Graph Visualizer">
+              <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="18" cy="6" r="3"></circle>
+                <circle cx="6" cy="18" r="3"></circle>
+                <circle cx="18" cy="18" r="3"></circle>
+                <circle cx="6" cy="6" r="3"></circle>
+                <path d="M9 6h6M6 9v6M9 18h6M18 9v6M8 8l8 8M16 8l-8 8"></path>
+              </svg>
+              <span className="nav-item-label">Graphs</span>
+            </button>
+            <button className={`nav-item matrix-tab ${mode === 'matrix' ? 'active' : ''}`} onClick={() => handleModeChange('matrix')} title="Matrix Visualizer">
+              <svg className="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="9" y1="3" x2="9" y2="21"></line>
+                <line x1="15" y1="3" x2="15" y2="21"></line>
+                <line x1="3" y1="9" x2="21" y2="9"></line>
+                <line x1="3" y1="15" x2="21" y2="15"></line>
+              </svg>
+              <span className="nav-item-label">Matrix</span>
+            </button>
+          </nav>
+        </div>
+        <div className="sidebar-bottom">
           <button className="theme-toggle-btn" onClick={() => setIsDarkMode(!isDarkMode)} title="Toggle Theme">
             {isDarkMode ? (
               <svg className="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1142,48 +1302,269 @@ export default function App() {
             )}
           </button>
         </div>
-
-        <nav className="nav-menu">
-          <button className={`nav-item sorting-tab ${mode === 'sorting' ? 'active' : ''}`} onClick={() => handleModeChange('sorting')}>
-            <svg className="nav-icon" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg> Sorting
-          </button>
-          <button className={`nav-item stack-tab ${mode === 'stack' ? 'active' : ''}`} onClick={() => handleModeChange('stack')}>
-            <svg className="nav-icon" viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg> Stack
-          </button>
-          <button className={`nav-item queue-tab ${mode === 'queue' ? 'active' : ''}`} onClick={() => handleModeChange('queue')}>
-            <svg className="nav-icon" viewBox="0 0 24 24"><path d="M3 12h18M21 12l-4-4M21 12l-4 4"></path><circle cx="6" cy="12" r="3"></circle><circle cx="14" cy="12" r="3"></circle></svg> Queue
-          </button>
-          <button className={`nav-item linkedlist-tab ${mode === 'linkedlist' ? 'active' : ''}`} onClick={() => handleModeChange('linkedlist')}>
-            <svg className="nav-icon" viewBox="0 0 24 24"><rect x="3" y="9" width="5" height="6" rx="1"></rect><rect x="16" y="9" width="5" height="6" rx="1"></rect><path d="M8 12h8M13 9l3 3-3 3"></path></svg> Linked List
-          </button>
-          <button className={`nav-item tree-tab ${mode === 'tree' ? 'active' : ''}`} onClick={() => handleModeChange('tree')}>
-            <svg className="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="5" r="3"></circle><circle cx="6" cy="19" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="M12 8L7 16M12 8l5 8"></path></svg> Binary Tree
-          </button>
-          <button className={`nav-item graph-tab ${mode === 'graph' ? 'active' : ''}`} onClick={() => handleModeChange('graph')}>
-            <svg className="nav-icon" viewBox="0 0 24 24"><circle cx="18" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><circle cx="18" cy="18" r="3"></circle><circle cx="6" cy="6" r="3"></circle><path d="M9 6h6M6 9v6M9 18h6M18 9v6M8 8l8 8M16 8l-8 8"></path></svg> Graph
-          </button>
-          <button className={`nav-item matrix-tab ${mode === 'matrix' ? 'active' : ''}`} onClick={() => handleModeChange('matrix')}>
-            <svg className="nav-icon" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line><line x1="15" y1="3" x2="15" y2="21"></line><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line></svg> Matrix
-          </button>
-        </nav>
-
-        <div className="sidebar-footer">
-          <div className="status-indicator">
-            <span className="status-dot green"></span>
-            <span class="status-text">Engine Ready</span>
-          </div>
-          <span className="built-by">Algorithms Lab</span>
-        </div>
       </aside>
 
       {/* MAIN CONTENT WORKSPACE */}
-      <main className="main-content">
-        {/* CONTROL PANEL */}
-        <section className="control-panel">
-          <div className="panel-card">
-            {/* Sorting Tab Controls */}
-            {mode === 'sorting' && (
-              <div className="control-group">
+      <main className={`main-content ${mode === 'ide' ? 'ide-layout' : ''}`}>
+        {mode === 'ide' ? (
+          <div className="playground-workspace">
+            {/* Playground Editor Pane */}
+            <div className="playground-editor-pane">
+              <div className="playground-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '1.2rem' }}>💻</span>
+                  <span style={{ fontWeight: 700, fontSize: '1.05rem', color: 'var(--text-primary)' }}>Python IDE Playground</span>
+                </div>
+                <div className="playground-actions">
+                  <button className="btn-primary" onClick={runSortingCode}>
+                    <svg className="run-icon" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> Run
+                  </button>
+                  <button className="btn-secondary btn-ai-review" onClick={runAiReview} disabled={reviewLoading}>
+                    {reviewLoading ? (
+                      <>
+                        <span className="review-spinner" />
+                        Reviewing…
+                      </>
+                    ) : (
+                      <>
+                        🤖 Analyse with AI
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="editor-container playground-editor">
+                <div className="editor-header">
+                  <div className="window-dots">
+                    <span className="dot red"></span>
+                    <span className="dot yellow"></span>
+                    <span className="dot green"></span>
+                  </div>
+                  <div className="editor-tabs">
+                    <div className="editor-tab active">
+                      <span className="tab-icon">🐍</span>
+                      <span className="tab-title">main.py</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="monaco-instance-wrapper">
+                  <Editor
+                    height="100%"
+                    language="python"
+                    theme={isDarkMode ? "vs-dark" : "vs"}
+                    value={editorValue}
+                    onMount={handleEditorDidMount}
+                    options={{
+                      automaticLayout: true,
+                      fontSize: 14,
+                      minimap: { enabled: false }
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Playground Output Panel */}
+            <div className="playground-output-pane">
+              <div className="output-tabs">
+                <button
+                  className={`output-tab ${activeRightTab === 'console' ? 'active' : ''}`}
+                  onClick={() => setActiveRightTab('console')}
+                >
+                  Terminal Console
+                </button>
+                <button
+                  className={`output-tab ${activeRightTab === 'review' ? 'active' : ''}`}
+                  onClick={() => setActiveRightTab('review')}
+                >
+                  AI Code Review
+                </button>
+              </div>
+
+              <div className="output-content">
+                {activeRightTab === 'console' && (
+                  <div className="console-tab-content">
+                    {consoleOutput ? (
+                      <pre className="console-body inline-console">{consoleOutput}</pre>
+                    ) : (
+                      <div className="console-empty">
+                        <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>⌨</span>
+                        Run output will be displayed here. Click the "Run" button to execute.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeRightTab === 'review' && (
+                  <div className="review-tab-content">
+                    {reviewLoading && (
+                      <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>🔍</div>
+                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                          Agent is reviewing your code…
+                        </div>
+                        <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+                          Running syntax analysis, complexity estimation,<br/>
+                          security scan, trace analysis, and Gemini review…
+                        </div>
+                        <div className="review-progress-bar" style={{ marginTop: '24px' }} />
+                      </div>
+                    )}
+
+                    {reviewError && !reviewLoading && (
+                      <div className="review-error-block">
+                        <div style={{ color: '#f43f5e', fontWeight: 600, marginBottom: '6px' }}>⚠ Review Failed</div>
+                        <div style={{ fontSize: '0.83rem' }}>{reviewError}</div>
+                      </div>
+                    )}
+
+                    {!reviewLoading && !reviewError && !reviewReport && (
+                      <div className="review-empty">
+                        <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '12px' }}>🤖</span>
+                        Click "Analyse with AI" to generate a detailed code quality, complexity, security, and optimization report.
+                      </div>
+                    )}
+
+                    {!reviewLoading && !reviewError && reviewReport && (
+                      <div className="review-report-details">
+                        {/* Summary Ribbon */}
+                        <div className="review-summary-card">
+                          <div className="section-label">Overall Assessment</div>
+                          <p>{reviewReport.code_quality?.summary || 'Review complete.'}</p>
+                          <div className="badge-row">
+                            <span className={`risk-badge ${reviewReport.security?.risk_level || 'LOW'}`}>
+                              Risk: {reviewReport.security?.risk_level || 'LOW'}
+                            </span>
+                            {reviewReport.complexity?.time && (
+                              <span className="complexity-badge-sm">{reviewReport.complexity.time}</span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Report Sections */}
+                        <div className="report-sections-list">
+                          {/* 1 - Complexity */}
+                          <div className="report-section-card">
+                            <div className="section-card-header">📊 Complexity Analysis</div>
+                            <div className="section-card-body">
+                              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                                <div className="complexity-badge-pill">
+                                  <span className="pill-label">Time</span>
+                                  <span className="pill-value">{reviewReport.complexity?.time || '—'}</span>
+                                </div>
+                                <div className="complexity-badge-pill">
+                                  <span className="pill-label">Space</span>
+                                  <span className="pill-value">{reviewReport.complexity?.space || '—'}</span>
+                                </div>
+                              </div>
+                              <p>{reviewReport.complexity?.explanation}</p>
+                            </div>
+                          </div>
+
+                          {/* 2 - Code Quality */}
+                          <div className="report-section-card">
+                            <div className="section-card-header">✍️ Code Quality</div>
+                            <div className="section-card-body">
+                              <div style={{ marginBottom: '10px' }}>
+                                <strong style={{ color: 'var(--text-primary)' }}>Readability</strong>
+                                <p style={{ marginTop: '4px' }}>{reviewReport.code_quality?.readability}</p>
+                              </div>
+                              <div style={{ marginBottom: '10px' }}>
+                                <strong style={{ color: 'var(--text-primary)' }}>Naming Conventions</strong>
+                                <p style={{ marginTop: '4px' }}>{reviewReport.code_quality?.naming_conventions}</p>
+                              </div>
+                              {reviewReport.code_quality?.issues?.length > 0 && (
+                                <div style={{ marginTop: '12px' }}>
+                                  <strong style={{ color: 'var(--text-primary)' }}>Issues:</strong>
+                                  <ul className="issues-list">
+                                    {reviewReport.code_quality.issues.map((item, idx) => (
+                                      <li key={idx}>
+                                        {typeof item === 'string' ? item : (
+                                          <span>
+                                            {item.line && <span className="line-badge">L{item.line}</span>} {item.issue || item.message}
+                                          </span>
+                                        )}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 3 - Security */}
+                          <div className="report-section-card">
+                            <div className="section-card-header">🔒 Security Scan</div>
+                            <div className="section-card-body">
+                              <div style={{ marginBottom: '12px' }}>
+                                <strong>Risk Level:</strong> <span className={`risk-badge-text ${reviewReport.security?.risk_level || 'LOW'}`}>{reviewReport.security?.risk_level || 'LOW'}</span>
+                              </div>
+                              {reviewReport.security?.findings?.length > 0 ? (
+                                <ul className="issues-list">
+                                  {reviewReport.security.findings.map((item, idx) => (
+                                    <li key={idx}>
+                                      {typeof item === 'string' ? item : (
+                                        <span>
+                                          {item.line && <span className="line-badge">L{item.line}</span>} {item.issue || item.message}
+                                        </span>
+                                      )}
+                                    </li>
+                                  ))}
+                                </ul>
+                              ) : (
+                                <p style={{ color: 'var(--success)', fontStyle: 'italic' }}>✓ No security issues detected.</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* 4 - Optimization */}
+                          <div className="report-section-card">
+                            <div className="section-card-header">⚡ Optimization Suggestions</div>
+                            <div className="section-card-body">
+                              <p><strong>Suggested Improvement:</strong> {reviewReport.optimization?.expected_improvement}</p>
+                            </div>
+                          </div>
+
+                          {/* 5 - Improved Code */}
+                          <div className="report-section-card">
+                            <div className="section-card-header">🛠️ Suggested Optimized Code</div>
+                            <div className="section-card-body" style={{ padding: '0px' }}>
+                              <div style={{ borderTop: '1px solid var(--border-color)', height: '240px' }}>
+                                <Editor
+                                  height="100%"
+                                  language="python"
+                                  theme={isDarkMode ? "vs-dark" : "vs"}
+                                  value={reviewReport.improved_code || '# No improvements suggested.'}
+                                  options={{
+                                    readOnly: true,
+                                    minimap: { enabled: false },
+                                    fontSize: 12,
+                                    automaticLayout: true,
+                                    scrollBeyondLastLine: false,
+                                    lineNumbers: 'on',
+                                    folding: false,
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* CONTROL PANEL */}
+            <section className="control-panel">
+              <div className="panel-card">
+                {/* Sorting Tab Controls */}
+                {mode === 'sorting' && (
+                  <div className="control-group">
                 <div className="config-header">
                   <div className="select-wrapper">
                     <label htmlFor="algorithm">Load Template</label>
@@ -1541,6 +1922,8 @@ export default function App() {
             </div>
           )}
         </section>
+        </>
+      )}
       </main>
     </div>
   );
