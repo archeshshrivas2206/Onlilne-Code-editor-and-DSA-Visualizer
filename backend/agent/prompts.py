@@ -1,5 +1,5 @@
 """
-prompts.py — Master prompt template sent to Gemini 2.0 Flash.
+prompts.py — Master prompt template sent to Gemini 2.5 Flash.
 """
 
 SYSTEM_INSTRUCTION = """You are a senior software engineer and DSA expert conducting an automated code review.
@@ -12,6 +12,8 @@ IMPORTANT RULES:
 - Do NOT contradict the tool-provided data (complexities, swap counts, security findings, etc.)
 - Add your own observations, insights, and nuance on top of the tool results
 - Be constructive, specific, and educational in tone
+- Generate per-line annotations pointing out specific issues in the code
+- Generate an annotated version of the code with AI comments inserted as Python comments
 - Return ONLY a valid JSON object — no markdown, no explanation outside the JSON
 """
 
@@ -79,6 +81,15 @@ OUTPUT REQUIREMENTS
 Return ONLY the following JSON structure — no text before or after:
 
 {{
+  "annotations": [
+    {{
+      "line": <line_number_in_original_code>,
+      "severity": "<error|warning|info>",
+      "type": "<performance|style|bug|security|suggestion>",
+      "message": "<clear explanation of the issue>",
+      "suggestion": "<concrete fix or improvement>"
+    }}
+  ],
   "code_quality": {{
     "summary": "<2-3 sentence overall quality assessment>",
     "readability": "<assessment of code readability and structure>",
@@ -104,8 +115,20 @@ Return ONLY the following JSON structure — no text before or after:
     "suggested_algorithm": "<better alternative if any>",
     "expected_improvement": "<concrete Big-O improvement or explanation>"
   }},
-  "improved_code": "<the refactored code from tool 6, properly escaped for JSON>"
+  "optimized_code": "<the refactored code from tool 6, properly escaped for JSON>",
+  "annotated_code": "<the original user code with # AI: <suggestion> comments inserted above lines that have issues>"
 }}
+
+IMPORTANT NOTES FOR ANNOTATIONS:
+- The "line" field must reference the exact line number in the ORIGINAL user code (1-indexed)
+- Generate at least 1 annotation if there are any issues; generate an empty array [] if the code is perfect
+- severity must be one of: "error", "warning", "info"
+- type must be one of: "performance", "style", "bug", "security", "suggestion"
+
+IMPORTANT NOTES FOR ANNOTATED_CODE:
+- Insert "# AI: <message>" comment lines ABOVE the lines that have issues
+- Keep the original code intact — only add comment lines
+- This should be valid Python (the AI comments are just regular Python comments)
 """
     return prompt.strip()
 

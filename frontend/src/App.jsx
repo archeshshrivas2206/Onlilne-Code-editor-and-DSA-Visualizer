@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Editor from '@monaco-editor/react';
 import usePlayback from './hooks/usePlayback';
 
@@ -11,6 +11,7 @@ import TreeVisualizer from './components/visualizers/TreeVisualizer';
 import GraphVisualizer from './components/visualizers/GraphVisualizer';
 import MatrixVisualizer from './components/visualizers/MatrixVisualizer';
 import ReviewPanel from './ai-review/ReviewPanel';
+import './ai-review/annotation-styles.css';
 
 /* -------------------- ALGORITHM TEMPLATES -------------------- */
 const ALGO_TEMPLATES = {
@@ -227,6 +228,13 @@ export default function App() {
   const decorationsRef = useRef([]);
   const errorDecorationsRef = useRef([]);
 
+  // AI Annotation state
+  const aiAnnotationsRef = useRef({});       // line -> annotation map for hover
+  const aiDecorationsRef = useRef([]);       // Monaco decoration IDs
+  const hoverProviderRef = useRef(null);     // disposable hover provider
+  const [reviewSubTab, setReviewSubTab] = useState('review');
+  const [copyFeedback, setCopyFeedback] = useState(false);
+
   // Load playback engine hook
   const playback = usePlayback(300);
 
@@ -354,6 +362,128 @@ export default function App() {
     errorDecorationsRef.current = editorRef.current.deltaDecorations(errorDecorationsRef.current, []);
   };
 
+  /* -------------------- AI ANNOTATION HELPERS -------------------- */
+  const clearAiAnnotations = useCallback(() => {
+    if (!editorRef.current || !monacoRef.current) return;
+    const model = editorRef.current.getModel();
+    if (model) {
+      monacoRef.current.editor.setModelMarkers(model, 'ai-review', []);
+    }
+    aiDecorationsRef.current = editorRef.current.deltaDecorations(aiDecorationsRef.current, []);
+    aiAnnotationsRef.current = {};
+  }, []);
+
+  const applyAiAnnotations = useCallback((annotations) => {
+    if (!editorRef.current || !monacoRef.current || !annotations?.length) return;
+    const editor = editorRef.current;
+    const monaco = monacoRef.current;
+    const model = editor.getModel();
+    if (!model) return;
+
+    // Clear previous AI annotations
+    clearAiAnnotations();
+
+    // Build line -> annotation map for hover provider
+    const lineMap = {};
+    annotations.forEach(a => {
+      if (a.line) lineMap[a.line] = a;
+    });
+    aiAnnotationsRef.current = lineMap;
+
+    // Severity mapping
+    const severityMap = {
+      error: monaco.MarkerSeverity.Error,
+      warning: monaco.MarkerSeverity.Warning,
+      info: monaco.MarkerSeverity.Info,
+    };
+
+    // 1. Set model markers (squiggle underlines)
+    const markers = annotations
+      .filter(a => a.line && a.line <= model.getLineCount())
+      .map(a => ({
+        startLineNumber: a.line,
+        startColumn: 1,
+        endLineNumber: a.line,
+        endColumn: model.getLineMaxColumn(a.line),
+        message: `${a.message}${a.suggestion ? '\n💡 ' + a.suggestion : ''}`,
+        severity: severityMap[a.severity] || monaco.MarkerSeverity.Info,
+        source: 'AI Review',
+      }));
+    monaco.editor.setModelMarkers(model, 'ai-review', markers);
+
+    // 2. Set gutter decorations + line highlights + inline messages
+    const newDecorations = annotations
+      .filter(a => a.line && a.line <= model.getLineCount())
+      .flatMap(a => {
+        const sev = a.severity || 'info';
+        const decos = [{
+          range: new monaco.Range(a.line, 1, a.line, 1),
+          options: {
+            isWholeLine: true,
+            glyphMarginClassName: `ai-glyph-${sev}`,
+            className: `ai-line-${sev}`,
+            glyphMarginHoverMessage: { value: `**🤖 AI ${sev.toUpperCase()}:** ${a.message}` },
+          },
+        }];
+        // Add inline after-text decoration
+        if (a.message) {
+          decos.push({
+            range: new monaco.Range(a.line, model.getLineMaxColumn(a.line), a.line, model.getLineMaxColumn(a.line)),
+            options: {
+              after: {
+                content: `  ⚡ ${a.message.length > 60 ? a.message.substring(0, 57) + '...' : a.message}`,
+                inlineClassName: `ai-inline-${sev}`,
+              },
+            },
+          });
+        }
+        return decos;
+      });
+
+    aiDecorationsRef.current = editor.deltaDecorations(aiDecorationsRef.current, newDecorations);
+  }, [clearAiAnnotations]);
+
+  // Register hover provider once Monaco mounts
+  useEffect(() => {
+    if (!monacoRef.current) return;
+    const monaco = monacoRef.current;
+
+    // Dispose previous provider if exists
+    if (hoverProviderRef.current) {
+      hoverProviderRef.current.dispose();
+    }
+
+    hoverProviderRef.current = monaco.languages.registerHoverProvider('python', {
+      provideHover: (model, position) => {
+        const annotation = aiAnnotationsRef.current[position.lineNumber];
+        if (!annotation) return null;
+
+        const sev = annotation.severity || 'info';
+        const sevIcon = sev === 'error' ? '🔴' : sev === 'warning' ? '🟡' : '🔵';
+
+        let hoverContent = `### ${sevIcon} AI Suggestion _(${sev})_\n\n${annotation.message}`;
+        if (annotation.suggestion) {
+          hoverContent += `\n\n**💡 Suggested fix:**\n\`\`\`python\n${annotation.suggestion}\n\`\`\``;
+        }
+        if (annotation.type) {
+          hoverContent += `\n\n---\n_Category: ${annotation.type}_`;
+        }
+
+        return {
+          range: new monaco.Range(position.lineNumber, 1, position.lineNumber, model.getLineMaxColumn(position.lineNumber)),
+          contents: [{ value: hoverContent, isTrusted: true }],
+        };
+      },
+    });
+
+    return () => {
+      if (hoverProviderRef.current) {
+        hoverProviderRef.current.dispose();
+        hoverProviderRef.current = null;
+      }
+    };
+  }, []);
+
   /* -------------------- CODE EXECUTION -------------------- */
   const runSortingCode = async () => {
     playback.stop();
@@ -453,6 +583,8 @@ export default function App() {
     setReviewError(null);
     setReviewReport(null);
     setActiveRightTab('review');
+    setReviewSubTab('review');
+    clearAiAnnotations();
 
     try {
       const res = await fetch('http://127.0.0.1:8000/review', {
@@ -472,11 +604,36 @@ export default function App() {
       }
 
       setReviewReport(data);
+
+      // Apply inline annotations to Monaco editor
+      if (data.annotations && data.annotations.length > 0) {
+        applyAiAnnotations(data.annotations);
+      }
     } catch (e) {
       setReviewError(e.message || 'Unknown error occurred.');
     } finally {
       setReviewLoading(false);
     }
+  };
+
+  // Helper: copy to clipboard with feedback
+  const handleCopyCode = (code) => {
+    navigator.clipboard.writeText(code || '').then(() => {
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+    });
+  };
+
+  // Helper: replace editor code with optimized version
+  const handleReplaceCode = (newCode) => {
+    if (!newCode || !editorRef.current) return;
+    editorRef.current.setValue(newCode);
+    setEditorValue(newCode);
+    setIdeCode(newCode);
+    clearAiAnnotations();
+    setReviewReport(null);
+    setReviewSubTab('review');
+    setActiveRightTab('console');
   };
 
   /* -------------------- STACK METHODS -------------------- */
@@ -1361,6 +1518,7 @@ export default function App() {
                       fontFamily: "'Fira Code', var(--font-mono), monospace",
                       fontLigatures: true,
                       minimap: { enabled: false },
+                      glyphMargin: true,
                       cursorBlinking: 'smooth',
                       cursorSmoothCaretAnimation: 'on',
                       smoothScrolling: true,
@@ -1415,7 +1573,7 @@ export default function App() {
                 )}
 
                 {activeRightTab === 'review' && (
-                  <div className="review-tab-content">
+                  <div className="review-tab-content" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                     {reviewLoading && (
                       <div style={{ textAlign: 'center', padding: '60px 20px' }}>
                         <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>🔍</div>
@@ -1445,9 +1603,9 @@ export default function App() {
                     )}
 
                     {!reviewLoading && !reviewError && reviewReport && (
-                      <div className="review-report-details">
+                      <>
                         {/* Summary Ribbon */}
-                        <div className="review-summary-card">
+                        <div className="review-summary-card" style={{ margin: '12px 12px 0' }}>
                           <div className="section-label">Overall Assessment</div>
                           <p>{reviewReport.code_quality?.summary || 'Review complete.'}</p>
                           <div className="badge-row">
@@ -1457,103 +1615,236 @@ export default function App() {
                             {reviewReport.complexity?.time && (
                               <span className="complexity-badge-sm">{reviewReport.complexity.time}</span>
                             )}
+                            {reviewReport.annotations?.length > 0 && (
+                              <span className="annotation-count warnings">
+                                {reviewReport.annotations.length} annotation{reviewReport.annotations.length !== 1 ? 's' : ''}
+                              </span>
+                            )}
                           </div>
                         </div>
 
-                        {/* Report Sections */}
-                        <div className="report-sections-list">
-                          {/* 1 - Complexity */}
-                          <div className="report-section-card">
-                            <div className="section-card-header">📊 Complexity Analysis</div>
-                            <div className="section-card-body">
-                              <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-                                <div className="complexity-badge-pill">
-                                  <span className="pill-label">Time</span>
-                                  <span className="pill-value">{reviewReport.complexity?.time || '—'}</span>
-                                </div>
-                                <div className="complexity-badge-pill">
-                                  <span className="pill-label">Space</span>
-                                  <span className="pill-value">{reviewReport.complexity?.space || '—'}</span>
-                                </div>
-                              </div>
-                              <p>{reviewReport.complexity?.explanation}</p>
-                            </div>
-                          </div>
+                        {/* Sub-Tab Navigation */}
+                        <div className="review-sub-tabs">
+                          <button className={`review-sub-tab ${reviewSubTab === 'review' ? 'active' : ''}`} onClick={() => setReviewSubTab('review')}>
+                            <span className="tab-icon">📝</span> Review
+                            {reviewReport.annotations?.length > 0 && (
+                              <span className="annotation-count warnings">{reviewReport.annotations.length}</span>
+                            )}
+                          </button>
+                          <button className={`review-sub-tab ${reviewSubTab === 'security' ? 'active' : ''}`} onClick={() => setReviewSubTab('security')}>
+                            <span className="tab-icon">🔒</span> Security
+                          </button>
+                          <button className={`review-sub-tab ${reviewSubTab === 'complexity' ? 'active' : ''}`} onClick={() => setReviewSubTab('complexity')}>
+                            <span className="tab-icon">📊</span> Complexity
+                          </button>
+                          <button className={`review-sub-tab ${reviewSubTab === 'optimized' ? 'active' : ''}`} onClick={() => setReviewSubTab('optimized')}>
+                            <span className="tab-icon">🛠️</span> Optimized
+                          </button>
+                          <button className={`review-sub-tab ${reviewSubTab === 'annotated' ? 'active' : ''}`} onClick={() => setReviewSubTab('annotated')}>
+                            <span className="tab-icon">💬</span> Annotated
+                          </button>
+                        </div>
 
-                          {/* 2 - Code Quality */}
-                          <div className="report-section-card">
-                            <div className="section-card-header">✍️ Code Quality</div>
-                            <div className="section-card-body">
-                              <div style={{ marginBottom: '10px' }}>
-                                <strong style={{ color: 'var(--text-primary)' }}>Readability</strong>
-                                <p style={{ marginTop: '4px' }}>{reviewReport.code_quality?.readability}</p>
-                              </div>
-                              <div style={{ marginBottom: '10px' }}>
-                                <strong style={{ color: 'var(--text-primary)' }}>Naming Conventions</strong>
-                                <p style={{ marginTop: '4px' }}>{reviewReport.code_quality?.naming_conventions}</p>
-                              </div>
-                              {reviewReport.code_quality?.issues?.length > 0 && (
-                                <div style={{ marginTop: '12px' }}>
-                                  <strong style={{ color: 'var(--text-primary)' }}>Issues:</strong>
-                                  <ul className="issues-list">
-                                    {reviewReport.code_quality.issues.map((item, idx) => (
-                                      <li key={idx}>
-                                        {typeof item === 'string' ? item : (
-                                          <span>
-                                            {item.line && <span className="line-badge">L{item.line}</span>} {item.issue || item.message}
-                                          </span>
-                                        )}
-                                      </li>
-                                    ))}
-                                  </ul>
-                                </div>
-                              )}
-                            </div>
-                          </div>
+                        {/* Sub-Tab Content */}
+                        <div className="review-sub-tab-content">
 
-                          {/* 3 - Security */}
-                          <div className="report-section-card">
-                            <div className="section-card-header">🔒 Security Scan</div>
-                            <div className="section-card-body">
-                              <div style={{ marginBottom: '12px' }}>
-                                <strong>Risk Level:</strong> <span className={`risk-badge-text ${reviewReport.security?.risk_level || 'LOW'}`}>{reviewReport.security?.risk_level || 'LOW'}</span>
-                              </div>
-                              {reviewReport.security?.findings?.length > 0 ? (
-                                <ul className="issues-list">
-                                  {reviewReport.security.findings.map((item, idx) => (
-                                    <li key={idx}>
-                                      {typeof item === 'string' ? item : (
-                                        <span>
-                                          {item.line && <span className="line-badge">L{item.line}</span>} {item.issue || item.message}
-                                        </span>
+                          {/* ── TAB: Review ────────────────────────── */}
+                          {reviewSubTab === 'review' && (
+                            <div>
+                              {/* Annotation Summary */}
+                              {reviewReport.annotations?.length > 0 && (
+                                <>
+                                  <div className="annotation-summary-bar">
+                                    <div className="annotation-stat error-stat">
+                                      <span className="stat-count">{reviewReport.annotations.filter(a => a.severity === 'error').length}</span>
+                                      <span style={{ color: 'var(--text-muted)' }}>Errors</span>
+                                    </div>
+                                    <div className="annotation-stat warning-stat">
+                                      <span className="stat-count">{reviewReport.annotations.filter(a => a.severity === 'warning').length}</span>
+                                      <span style={{ color: 'var(--text-muted)' }}>Warnings</span>
+                                    </div>
+                                    <div className="annotation-stat info-stat">
+                                      <span className="stat-count">{reviewReport.annotations.filter(a => a.severity === 'info').length}</span>
+                                      <span style={{ color: 'var(--text-muted)' }}>Info</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Annotation Items */}
+                                  {reviewReport.annotations.map((a, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="annotation-item"
+                                      onClick={() => {
+                                        if (a.line && editorRef.current) {
+                                          editorRef.current.revealLineInCenter(a.line);
+                                          editorRef.current.setPosition({ lineNumber: a.line, column: 1 });
+                                          editorRef.current.focus();
+                                        }
+                                      }}
+                                    >
+                                      <div className="annotation-item-header">
+                                        <span className={`severity-dot ${a.severity || 'info'}`} />
+                                        {a.line && <span className="line-badge">L{a.line}</span>}
+                                        <span className="annotation-type-badge">{a.type || 'suggestion'}</span>
+                                      </div>
+                                      <div className="annotation-message">{a.message}</div>
+                                      {a.suggestion && (
+                                        <div className="annotation-suggestion">
+                                          <strong>💡 Fix: </strong>{a.suggestion}
+                                        </div>
                                       )}
-                                    </li>
+                                    </div>
                                   ))}
-                                </ul>
-                              ) : (
-                                <p style={{ color: 'var(--success)', fontStyle: 'italic' }}>✓ No security issues detected.</p>
+                                </>
+                              )}
+
+                              {(!reviewReport.annotations || reviewReport.annotations.length === 0) && (
+                                <div style={{ textAlign: 'center', padding: '30px', color: 'var(--text-muted)' }}>
+                                  <span style={{ fontSize: '2rem', display: 'block', marginBottom: '8px' }}>✅</span>
+                                  No inline issues found. Your code looks good!
+                                </div>
+                              )}
+
+                              {/* Code Quality Section */}
+                              {reviewReport.code_quality && (
+                                <div className="report-section-card" style={{ marginTop: '12px' }}>
+                                  <div className="section-card-header">✍️ Code Quality</div>
+                                  <div className="section-card-body">
+                                    <div style={{ marginBottom: '10px' }}>
+                                      <strong style={{ color: 'var(--text-primary)' }}>Readability</strong>
+                                      <p style={{ marginTop: '4px' }}>{reviewReport.code_quality?.readability}</p>
+                                    </div>
+                                    <div style={{ marginBottom: '10px' }}>
+                                      <strong style={{ color: 'var(--text-primary)' }}>Naming</strong>
+                                      <p style={{ marginTop: '4px' }}>{reviewReport.code_quality?.naming_conventions}</p>
+                                    </div>
+                                    {reviewReport.code_quality?.issues?.length > 0 && (
+                                      <div style={{ marginTop: '8px' }}>
+                                        <strong style={{ color: 'var(--text-primary)' }}>Issues:</strong>
+                                        <ul className="issues-list">
+                                          {reviewReport.code_quality.issues.map((item, idx) => (
+                                            <li key={idx}>{typeof item === 'string' ? item : (item.issue || item.message || JSON.stringify(item))}</li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
                               )}
                             </div>
-                          </div>
+                          )}
 
-                          {/* 4 - Optimization */}
-                          <div className="report-section-card">
-                            <div className="section-card-header">⚡ Optimization Suggestions</div>
-                            <div className="section-card-body">
-                              <p><strong>Suggested Improvement:</strong> {reviewReport.optimization?.expected_improvement}</p>
+                          {/* ── TAB: Security ──────────────────────── */}
+                          {reviewSubTab === 'security' && (
+                            <div>
+                              <div className="report-section-card">
+                                <div className="section-card-header">🔒 Security Scan</div>
+                                <div className="section-card-body">
+                                  <div style={{ marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <strong>Risk Level:</strong>
+                                    <span className={`risk-badge ${reviewReport.security?.risk_level || 'LOW'}`}>
+                                      {reviewReport.security?.risk_level || 'LOW'}
+                                    </span>
+                                  </div>
+                                  {reviewReport.security?.findings?.length > 0 ? (
+                                    <ul className="issues-list">
+                                      {reviewReport.security.findings.map((item, idx) => (
+                                        <li key={idx}>
+                                          {typeof item === 'string' ? item : (
+                                            <span>
+                                              {item.line && <span className="line-badge">L{item.line}</span>}
+                                              <span className={`risk-badge-text ${item.severity || 'LOW'}`} style={{ marginRight: '6px' }}>{item.severity || 'LOW'}</span>
+                                              {item.issue || item.message}
+                                            </span>
+                                          )}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  ) : (
+                                    <p style={{ color: 'var(--success)', fontStyle: 'italic' }}>✓ No security issues detected.</p>
+                                  )}
+                                </div>
+                              </div>
                             </div>
-                          </div>
+                          )}
 
-                          {/* 5 - Improved Code */}
-                          <div className="report-section-card">
-                            <div className="section-card-header">🛠️ Suggested Optimized Code</div>
-                            <div className="section-card-body" style={{ padding: '0px' }}>
-                              <div style={{ borderTop: '1px solid var(--border-color)', height: '240px' }}>
+                          {/* ── TAB: Complexity ────────────────────── */}
+                          {reviewSubTab === 'complexity' && (
+                            <div>
+                              <div className="report-section-card">
+                                <div className="section-card-header">📊 Complexity Analysis</div>
+                                <div className="section-card-body">
+                                  <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                                    <div className="complexity-badge-pill">
+                                      <span className="pill-label">Time</span>
+                                      <span className="pill-value">{reviewReport.complexity?.time || '—'}</span>
+                                    </div>
+                                    <div className="complexity-badge-pill">
+                                      <span className="pill-label">Space</span>
+                                      <span className="pill-value">{reviewReport.complexity?.space || '—'}</span>
+                                    </div>
+                                  </div>
+                                  <p>{reviewReport.complexity?.explanation}</p>
+                                </div>
+                              </div>
+
+                              {/* Runtime Analysis */}
+                              <div className="report-section-card" style={{ marginTop: '10px' }}>
+                                <div className="section-card-header">⏱️ Runtime Analysis</div>
+                                <div className="section-card-body">
+                                  <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+                                    <div style={{ flex: 1, background: 'rgba(6,182,212,0.08)', borderRadius: '8px', padding: '10px', textAlign: 'center', border: '1px solid rgba(6,182,212,0.15)' }}>
+                                      <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#06b6d4', fontFamily: 'var(--font-mono)' }}>{reviewReport.runtime_analysis?.total_swaps ?? '—'}</div>
+                                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Swaps</div>
+                                    </div>
+                                    <div style={{ flex: 1, background: 'rgba(6,182,212,0.08)', borderRadius: '8px', padding: '10px', textAlign: 'center', border: '1px solid rgba(6,182,212,0.15)' }}>
+                                      <div style={{ fontSize: '1.4rem', fontWeight: 700, color: '#06b6d4', fontFamily: 'var(--font-mono)' }}>{reviewReport.runtime_analysis?.total_comparisons ?? '—'}</div>
+                                      <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Comparisons</div>
+                                    </div>
+                                  </div>
+                                  <p>{reviewReport.runtime_analysis?.observation}</p>
+                                </div>
+                              </div>
+
+                              {/* Optimization */}
+                              <div className="report-section-card" style={{ marginTop: '10px' }}>
+                                <div className="section-card-header">⚡ Optimization</div>
+                                <div className="section-card-body">
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Current:</span>
+                                    <span className="complexity-badge-sm" style={{ background: 'rgba(245,158,11,0.1)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.2)' }}>{reviewReport.optimization?.current_algorithm || '—'}</span>
+                                    <span style={{ color: 'var(--text-muted)' }}>→</span>
+                                    <span className="complexity-badge-sm" style={{ background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.2)' }}>{reviewReport.optimization?.suggested_algorithm || 'No change'}</span>
+                                  </div>
+                                  <p>{reviewReport.optimization?.expected_improvement}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* ── TAB: Optimized Code ────────────────── */}
+                          {reviewSubTab === 'optimized' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                              <div className="code-action-bar">
+                                <button
+                                  className={`btn-code-action ${copyFeedback ? 'success' : ''}`}
+                                  onClick={() => handleCopyCode(reviewReport.optimized_code || reviewReport.improved_code)}
+                                >
+                                  {copyFeedback ? '✓ Copied!' : '📋 Copy Code'}
+                                </button>
+                                <button
+                                  className="btn-code-action primary"
+                                  onClick={() => handleReplaceCode(reviewReport.optimized_code || reviewReport.improved_code)}
+                                >
+                                  ⚡ Replace Current Code
+                                </button>
+                              </div>
+                              <div style={{ flex: 1, minHeight: '280px' }}>
                                 <Editor
                                   height="100%"
                                   language="python"
                                   theme={isDarkMode ? "vs-dark" : "vs"}
-                                  value={reviewReport.improved_code || '# No improvements suggested.'}
+                                  value={reviewReport.optimized_code || reviewReport.improved_code || '# No optimized code returned.'}
                                   options={{
                                     readOnly: true,
                                     minimap: { enabled: false },
@@ -1575,9 +1866,50 @@ export default function App() {
                                 />
                               </div>
                             </div>
-                          </div>
+                          )}
+
+                          {/* ── TAB: Annotated Code ────────────────── */}
+                          {reviewSubTab === 'annotated' && (
+                            <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                              <div className="code-action-bar">
+                                <button
+                                  className={`btn-code-action ${copyFeedback ? 'success' : ''}`}
+                                  onClick={() => handleCopyCode(reviewReport.annotated_code)}
+                                >
+                                  {copyFeedback ? '✓ Copied!' : '📋 Copy Annotated Code'}
+                                </button>
+                              </div>
+                              <div style={{ flex: 1, minHeight: '280px' }}>
+                                <Editor
+                                  height="100%"
+                                  language="python"
+                                  theme={isDarkMode ? "vs-dark" : "vs"}
+                                  value={reviewReport.annotated_code || '# No annotated code available.'}
+                                  options={{
+                                    readOnly: true,
+                                    minimap: { enabled: false },
+                                    fontSize: 12,
+                                    fontFamily: "'Fira Code', var(--font-mono), monospace",
+                                    fontLigatures: true,
+                                    automaticLayout: true,
+                                    scrollBeyondLastLine: false,
+                                    lineNumbers: 'on',
+                                    folding: false,
+                                    cursorBlinking: 'smooth',
+                                    cursorSmoothCaretAnimation: 'on',
+                                    smoothScrolling: true,
+                                    scrollbar: {
+                                      verticalScrollbarSize: 6,
+                                      horizontalScrollbarSize: 6,
+                                    }
+                                  }}
+                                />
+                              </div>
+                            </div>
+                          )}
+
                         </div>
-                      </div>
+                      </>
                     )}
                   </div>
                 )}

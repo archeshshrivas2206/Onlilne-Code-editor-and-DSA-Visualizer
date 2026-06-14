@@ -230,7 +230,7 @@ export default function ReviewPanel({ editorRef, playback, isDarkMode }) {
               }}>🤖</div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>AI Code Review</div>
-                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Powered by Gemini 2.0 Flash</div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Powered by Gemini 2.5 Flash</div>
               </div>
             </div>
             <button
@@ -365,7 +365,7 @@ export default function ReviewPanel({ editorRef, playback, isDarkMode }) {
                       height="300px"
                       language="python"
                       theme={isDarkMode ? 'vs-dark' : 'vs'}
-                      value={report.improved_code || '# No improved code returned.'}
+                      value={report.optimized_code || report.improved_code || '# No improved code returned.'}
                       options={{
                         readOnly: true,
                         minimap: { enabled: false },
