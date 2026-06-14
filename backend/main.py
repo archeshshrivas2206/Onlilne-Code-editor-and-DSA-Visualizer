@@ -6,9 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from models import CodeRequest, ReviewRequest
 from executor import execute_user_code
-
-# Load .env
-from dotenv import load_dotenv
+from dotenv import load_dotenv # Load .env
 load_dotenv()
 
 app = FastAPI(title="DSA Visualiser API", version="2.0.0")

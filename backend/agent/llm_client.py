@@ -1,5 +1,5 @@
 """
-llm_client.py — Gemini 2.0 Flash client wrapper using the new google-genai SDK.
+llm_client.py — Gemini 2.5 Flash client wrapper using the new google-genai SDK.
 """
 import os
 import json
@@ -51,7 +51,7 @@ def generate_report(code: str, tool_outputs: dict) -> dict:
                         system_instruction=SYSTEM_INSTRUCTION,
                         response_mime_type="application/json",
                         temperature=0.3,
-                        max_output_tokens=4096,
+                        max_output_tokens=8192,
                     ),
                 )
                 raw_text = response.text.strip()
