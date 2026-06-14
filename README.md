@@ -90,50 +90,26 @@ graph TD
 
 ## Project structure
 DSA_Visualiser/
-
 │
-
 ├── backend/
-
 │   ├── agent/
-
 │   │   ├── llm_client.py       # Gemini client with model fallback
-
 │   │   ├── prompts.py          # System instructions and output schemas
-
 │   │   └── review_agent.py     # Tool orchestrator
-
 │   ├── analysis/               # AST complexity and static metrics
-
 │   ├── executor.py             # Sandboxed Python runner
-
 │   ├── main.py                 # API routes (/run, /review)
-
 │   └── requirements.txt
-
 │
-
 ├── frontend/
-
 │   ├── src/
-
 │   │   ├── ai-review/          # ReviewPanel and Monaco gutter overlays
-
 │   │   ├── components/         # Sorting, Stack, Queue visualizers
-
 │   │   ├── App.jsx             # Main workspace layout
-
 │   │   ├── index.css           # Design tokens and dark mode
-
 │   │   └── main.jsx
-
 │   ├── package.json
-
-│   └── vite.config.js
-
-│
-
-└── dsavisualizer/              # Python virtual environment (not committed)
+│   └── vite.config.js            
 ---
 
 ## Setup
