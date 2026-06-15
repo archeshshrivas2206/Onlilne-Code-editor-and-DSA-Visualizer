@@ -1484,7 +1484,7 @@ export default function App() {
                       </>
                     ) : (
                       <>
-                        🤖 Analyse with AI
+                         Analyse with AI
                       </>
                     )}
                   </button>
